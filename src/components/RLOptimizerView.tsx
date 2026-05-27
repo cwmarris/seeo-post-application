@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { TrendingUp, ShieldAlert, CheckSquare, Plus, Trash } from 'lucide-react';
+import { TrendingUp, ShieldAlert, CheckSquare, Plus, Trash, FlaskConical } from 'lucide-react';
 import { type RLState, addBannedWord, removeBannedWord } from '../utils/rlEngine';
+import { getExperiments } from '../utils/autoresearchLoop';
 
 interface RLOptimizerViewProps {
   rlState: RLState;
@@ -12,6 +13,7 @@ export const RLOptimizerView: React.FC<RLOptimizerViewProps> = ({
   updateRlState
 }) => {
   const [newBanned, setNewBanned] = useState('');
+  const [experiments] = useState(() => getExperiments());
 
   const handleSliderChange = (factor: string, value: number) => {
     const updated = { ...rlState };
@@ -166,6 +168,48 @@ export const RLOptimizerView: React.FC<RLOptimizerViewProps> = ({
           </div>
         </div>
 
+      </div>
+
+      <div className="glass-card" style={{ padding: '24px', marginTop: '20px' }}>
+        <div className="panel-header" style={{ marginBottom: '12px' }}>
+          <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FlaskConical size={18} color="var(--color-primary)" /> Autoresearch experiment log
+          </h3>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>keep / discard (local)</span>
+        </div>
+        <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+          Each &quot;Improve draft&quot; run in the Composer logs metric and status here — analogous to{' '}
+          <code>results.tsv</code> in karpathy/autoresearch.
+        </p>
+        {experiments.length === 0 ?
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No experiments yet. Run Improve draft in the Composer.</p>
+        : <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '6px' }}>Time</th>
+                  <th style={{ padding: '6px' }}>Metric</th>
+                  <th style={{ padding: '6px' }}>Status</th>
+                  <th style={{ padding: '6px' }}>Source</th>
+                  <th style={{ padding: '6px' }}>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {experiments.slice(0, 12).map((exp) => (
+                  <tr key={exp.id} style={{ borderTop: '1px solid var(--border-glass)' }}>
+                    <td style={{ padding: '6px' }}>{new Date(exp.timestamp).toLocaleString()}</td>
+                    <td style={{ padding: '6px' }}>{exp.metric}</td>
+                    <td style={{ padding: '6px', color: exp.status === 'keep' ? 'var(--color-primary)' : undefined }}>
+                      {exp.status}
+                    </td>
+                    <td style={{ padding: '6px' }}>{exp.source}</td>
+                    <td style={{ padding: '6px' }}>{exp.description}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     </div>
   );

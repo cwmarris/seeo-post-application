@@ -103,6 +103,7 @@ export const App: React.FC = () => {
             averageRating={rlState.averageRating}
             totalRated={rlState.postCountRated}
             handlePostNow={handlePostNow}
+            onGoToScheduler={() => setActiveTab('scheduler')}
           />
         )}
 

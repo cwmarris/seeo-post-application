@@ -19,15 +19,19 @@ Post Composer → **seeo Visual Generator** calls the [OpenAI Images API](https:
 |----------|--------|---------|
 | `OPENAI_API_KEY` | Server / `.env` | Required for image generation in dev |
 | `OPENAI_IMAGE_MODEL` | Server / `.env` | Default `gpt-image-1` |
+| `OPENAI_DRAFT_MODEL` | Server / `.env` | Default `gpt-4o-mini` for draft improve |
 | `VITE_IMAGE_API_BASE_URL` | Client | Production: origin of your proxy serving `POST /api/openai/images` |
+| `VITE_DRAFT_API_BASE_URL` | Client | Production: origin serving `POST /api/generate/draft` |
 
 **Production:** static `vite build` output has no proxy. Deploy a small serverless route (or API gateway) that forwards to `https://api.openai.com/v1/images/generations` with the same JSON body as `server/openaiImages.ts`, then set `VITE_IMAGE_API_BASE_URL`.
 
 **Security:** Do not set `VITE_OPENAI_API_KEY`. Keys belong server-side only.
 
-## Post draft generation (autoresearch)
+## Post draft improvement (autoresearch-inspired)
 
-See [docs/AUTORESEARCH.md](./docs/AUTORESEARCH.md). The Python stub is not connected to the React app yet.
+See [docs/AUTORESEARCH.md](./docs/AUTORESEARCH.md) — **not** the GPU submodule. In Post Composer: **Improve draft** runs a keep/discard loop using RL state (+ OpenAI when `OPENAI_API_KEY` is set).
+
+LinkedIn analytics MVP: [docs/LINKEDIN_MONITORING.md](./docs/LINKEDIN_MONITORING.md).
 
 ```bash
 python3 scripts/autoresearch_generate.py \

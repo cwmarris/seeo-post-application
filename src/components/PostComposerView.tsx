@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
-import { Sparkles, Calendar, Send, ShieldAlert, Award } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Sparkles, Calendar, Send, ShieldAlert, Award, FlaskConical, RefreshCw } from 'lucide-react';
 import { FOUNDER_PROFILES, type LinkedInPost } from '../utils/mockData';
 import { type RLState, ratePostAndAdapt } from '../utils/rlEngine';
 import { generateLinkedInPost } from '../utils/postGenerator';
+import {
+  runImproveDraftIteration,
+  isAutoImproveEnabled,
+  setAutoImproveEnabled,
+  scoreDraft,
+} from '../utils/autoresearchLoop';
+import { isOpenAIDraftConfigured } from '../utils/openaiDraft';
+import { useAutoresearchAutoImprove } from '../hooks/useAutoresearchAutoImprove';
 import { GroundedDataPanel } from './GroundedDataPanel';
 import { ImageGenerator } from './ImageGenerator';
 import { LinkedInPreview } from './LinkedInPreview';
@@ -30,6 +38,10 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
   const [replacedPhrases, setReplacedPhrases] = useState<string[]>([]);
   const [wasFiltered, setWasFiltered] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isImproving, setIsImproving] = useState<boolean>(false);
+  const [improveMsg, setImproveMsg] = useState<string>('');
+  const [autoImprove, setAutoImprove] = useState<boolean>(() => isAutoImproveEnabled());
+  const [draftMetric, setDraftMetric] = useState<number | null>(null);
 
   // RL Rating States
   const [userRating, setUserRating] = useState<number>(0);
@@ -41,6 +53,41 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
   const [scheduledDate, setScheduledDate] = useState<string>('2026-05-28T09:00');
 
   const activeAuthor = FOUNDER_PROFILES.find(p => p.id === selectedAuthor) || FOUNDER_PROFILES[0];
+
+  const improveInput = useMemo(
+    () =>
+      postDraft.trim() ?
+        {
+          draft: postDraft,
+          authorId: selectedAuthor,
+          tone: selectedTone,
+          steepFocus: activeSteep,
+          groundedText,
+          rlState,
+          aspectFeedback: selectedFeedback,
+        }
+      : null,
+    [
+      postDraft,
+      selectedAuthor,
+      selectedTone,
+      activeSteep,
+      groundedText,
+      rlState,
+      selectedFeedback,
+    ]
+  );
+
+  useAutoresearchAutoImprove({
+    enabled: autoImprove,
+    hasDraft: Boolean(postDraft.trim()),
+    input: improveInput,
+    onImproved: (content, message) => {
+      setPostDraft(content);
+      setImproveMsg(message);
+      setDraftMetric(scoreDraft(content, rlState, activeSteep));
+    },
+  });
 
   const handleToggleSteep = (factor: string) => {
     if (activeSteep.includes(factor)) {
@@ -67,6 +114,8 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
       setPostDraft(result.content);
       setReplacedPhrases(result.replacedPhrases);
       setWasFiltered(result.wasFiltered);
+      setDraftMetric(scoreDraft(result.content, rlState, activeSteep));
+      setImproveMsg('');
       setIsGenerating(false);
       
       // Auto assign visual if keyword match, unless already chosen
@@ -78,6 +127,36 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
         }
       }
     }, 1200);
+  };
+
+  const handleImproveDraft = async () => {
+    if (!postDraft.trim() || !improveInput) return;
+    setIsImproving(true);
+    setImproveMsg('');
+    try {
+      const result = await runImproveDraftIteration(improveInput);
+      if (result.status === 'keep') {
+        setPostDraft(result.content);
+        setReplacedPhrases(result.replacedPhrases);
+        setWasFiltered(result.replacedPhrases.length > 0);
+      }
+      setDraftMetric(result.metric);
+      setImproveMsg(
+        result.status === 'keep' ?
+          `Kept (${result.source}): quality ${result.previousMetric} → ${result.metric}`
+        : `Discarded (${result.source}): ${result.previousMetric} → ${result.metric} — original kept`
+      );
+    } catch (err) {
+      setImproveMsg(err instanceof Error ? err.message : 'Improve failed');
+    } finally {
+      setIsImproving(false);
+    }
+  };
+
+  const handleToggleAutoImprove = () => {
+    const next = !autoImprove;
+    setAutoImprove(next);
+    setAutoImproveEnabled(next);
   };
 
   // Quick action drafting assistance
@@ -288,6 +367,96 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
                     </div>
                   </div>
                 )}
+
+                {/* Autoresearch-inspired improve loop */}
+                <div
+                  className="glass-card"
+                  style={{
+                    padding: '14px',
+                    border: '1px solid rgba(16, 185, 129, 0.2)',
+                    background: 'rgba(16, 185, 129, 0.04)',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '10px',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <FlaskConical size={14} color="var(--color-primary)" />
+                      Autoresearch loop (draft improve)
+                    </span>
+                    {draftMetric !== null && (
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Quality metric: <strong>{draftMetric}</strong>/100
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.4 }}>
+                    One iteration: score draft → propose improvement (OpenAI if configured, else local RL) → keep only if metric rises. Uses ratings, banned phrases, and STEEP weights — not GPU training.
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ fontSize: '11px', display: 'flex', gap: '6px', alignItems: 'center' }}
+                      disabled={isImproving}
+                      onClick={() => void handleImproveDraft()}
+                    >
+                      <RefreshCw
+                        size={14}
+                        style={isImproving ? { animation: 'spin 1s linear infinite' } : undefined}
+                      />
+                      {isImproving ? 'Improving…' : 'Improve draft'}
+                    </button>
+                    <label
+                      style={{
+                        fontSize: '11px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={autoImprove}
+                        onChange={handleToggleAutoImprove}
+                      />
+                      Auto-improve every 30 min (tab open)
+                    </label>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                      {isOpenAIDraftConfigured() ?
+                        'OpenAI: via /api/generate/draft'
+                      : 'Local-only (set OPENAI_API_KEY for LLM)'}
+                    </span>
+                  </div>
+                  {improveMsg && (
+                    <div
+                      style={{
+                        marginTop: '8px',
+                        fontSize: '11px',
+                        color: 'var(--color-primary)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {improveMsg}
+                    </div>
+                  )}
+                </div>
 
                 {/* 3. Assistant Drafting Helpers */}
                 <div className="assistant-panel">

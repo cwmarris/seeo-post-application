@@ -2,6 +2,7 @@ import React from 'react';
 import { Sparkles, Calendar, Award, Zap } from 'lucide-react';
 import { type LinkedInPost, FOUNDER_PROFILES } from '../utils/mockData';
 import { LinkedInPreview } from './LinkedInPreview';
+import { PostPerformancePanel } from './PostPerformancePanel';
 
 interface DashboardViewProps {
   posts: LinkedInPost[];
@@ -9,6 +10,7 @@ interface DashboardViewProps {
   averageRating: number;
   totalRated: number;
   handlePostNow: (id: string) => void;
+  onGoToScheduler?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -16,7 +18,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   rlScore,
   averageRating,
   totalRated,
-  handlePostNow
+  handlePostNow,
+  onGoToScheduler
 }) => {
   const publishedPosts = posts.filter((p) => p.status === 'published');
   const scheduledPosts = posts.filter((p) => p.status === 'scheduled');
@@ -158,6 +161,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
       </div>
+
+      <PostPerformancePanel
+        posts={posts}
+        onSelectScheduled={onGoToScheduler ? () => onGoToScheduler() : undefined}
+      />
     </div>
   );
 };
