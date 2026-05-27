@@ -39,7 +39,7 @@ export const getRLState = (): RLState => {
   if (saved) {
     try {
       return JSON.parse(saved);
-    } catch (e) {
+    } catch {
       return DEFAULT_RL_STATE;
     }
   }
@@ -82,7 +82,7 @@ export const filterBannedPhrases = (text: string): { cleanText: string; replaced
     const regex = new RegExp(`\\b${banned}\\b`, 'gi');
     if (regex.test(cleanText)) {
       // Determine replacement synonym
-      let synonym = BANNED_SYNONYMS[banned.toLowerCase()] || 'examine';
+      const synonym = BANNED_SYNONYMS[banned.toLowerCase()] || 'examine';
       
       // Match casing of original first letter
       cleanText = cleanText.replace(regex, (matchedStr) => {

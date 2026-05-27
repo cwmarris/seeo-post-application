@@ -118,12 +118,11 @@ export const generateLinkedInPost = (
   const profile = FOUNDER_PROFILES.find(p => p.id === authorId) || FOUNDER_PROFILES[0];
   
   // 1. Construct the Hook
-  let hookIndex = 0;
-  if (rlState.hookStyle === 'empirical') hookIndex = 2;
-  else if (rlState.hookStyle === 'historical') hookIndex = 1;
-  else hookIndex = 0;
-  
-  let hook = authorData.hooks[hookIndex] || authorData.hooks[0];
+  const hookIndex =
+    rlState.hookStyle === 'empirical' ? 2
+    : rlState.hookStyle === 'historical' ? 1
+    : 0;
+  const hook = authorData.hooks[hookIndex] || authorData.hooks[0];
 
   // 2. STEEP Core Body
   const activeForces = steepFocus.length > 0 ? steepFocus : ['Technological'];
@@ -137,19 +136,15 @@ export const generateLinkedInPost = (
   });
 
   // 3. Grounded Data Integration
-  let groundedBlock = '';
-  if (groundedData.trim()) {
-    const groundedLines = groundedData.trim().split('\n');
-    const firstLine = groundedLines[0];
-    
-    // Structure grounded data beautifully
-    groundedBlock = `Here is a clear example from recent operations:
+  const groundedBlock = groundedData.trim()
+    ? (() => {
+        const groundedLines = groundedData.trim().split('\n');
+        const firstLine = groundedLines[0];
+        return `Here is a clear example from recent operations:
 👉 ${firstLine}
 ${groundedLines.slice(1).map(line => `• ${line}`).join('\n')}`;
-  } else {
-    // Default fallback grounded data for seeo.ai
-    groundedBlock = `In transport and manufacturing, we consistently see forklift near-misses go unreported. seeo.ai exposes these risks automatically, enabling supervisors to take proactive action.`;
-  }
+      })()
+    : `In transport and manufacturing, we consistently see forklift near-misses go unreported. seeo.ai exposes these risks automatically, enabling supervisors to take proactive action.`;
 
   // 4. Tone Adjustments & Emoji Injection
   let emojiList = '🚨 ';

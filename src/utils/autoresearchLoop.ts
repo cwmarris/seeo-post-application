@@ -142,9 +142,9 @@ export async function runImproveDraftIteration(
   const profile = FOUNDER_PROFILES.find((p) => p.id === authorId) ?? FOUNDER_PROFILES[0];
   const previousMetric = scoreDraft(draft, rlState, steepFocus);
 
-  let candidate = draft;
-  let replacedPhrases: string[] = [];
-  let source: 'local' | 'openai' = 'local';
+  let candidate: string;
+  let replacedPhrases: string[];
+  let source: 'local' | 'openai';
 
   const tryOpenAI =
     (input.preferOpenAI !== false && isOpenAIDraftConfigured()) ||
@@ -198,6 +198,7 @@ export async function runImproveDraftIteration(
     );
     candidate = local.content;
     replacedPhrases = local.replacedPhrases;
+    source = 'local';
   }
 
   const metric = scoreDraft(candidate, rlState, steepFocus);

@@ -154,6 +154,11 @@
   box-shadow: 0 0 10px var(--color-primary);
 }
 
+.status-dot.disconnected {
+  background-color: var(--color-accent);
+  box-shadow: 0 0 10px var(--color-accent);
+}
+
 /* Main Content Area */
 .app-content {
   flex: 1;

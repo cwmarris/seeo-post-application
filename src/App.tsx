@@ -4,6 +4,7 @@ import { DashboardView } from './components/DashboardView';
 import { PostComposerView } from './components/PostComposerView';
 import { SchedulerView } from './components/SchedulerView';
 import { RLOptimizerView } from './components/RLOptimizerView';
+import { HealthStatusBadge } from './components/HealthStatusBadge';
 import { INITIAL_POSTS, type LinkedInPost } from './utils/mockData';
 import { getRLState, type RLState } from './utils/rlEngine';
 import './styles/theme.css';
@@ -88,10 +89,7 @@ export const App: React.FC = () => {
           </div>
           
           <div className="header-actions">
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '6px 12px', border: '1px solid var(--border-glass)', borderRadius: '20px', fontSize: '12px' }}>
-              <span className="status-dot"></span>
-              <span style={{ fontWeight: 600 }}>Christchurch Hub Connected</span>
-            </div>
+            <HealthStatusBadge label="Christchurch Hub Connected" />
           </div>
         </header>
 

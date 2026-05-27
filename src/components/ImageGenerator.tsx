@@ -32,17 +32,17 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   const [error, setError] = useState<string | null>(null);
   const logTimeoutsRef = useRef<number[]>([]);
 
-  useEffect(() => {
+  const suggestedPrompt = (() => {
     if (postContent) {
       if (postContent.toLowerCase().includes('forklift') || postContent.toLowerCase().includes('warehouse')) {
-        setPromptText('A professional, industrial editorial photograph of a warehouse with a forklift operating inside a designated green safety zone overlay, high-fidelity cameras, realistic lighting.');
-      } else {
-        setPromptText('A modern minimalist SaaS graphic representing the STEEP business foresight framework, elegant geometric nodes in safety green and obsidian, clean branding.');
+        return 'A professional, industrial editorial photograph of a warehouse with a forklift operating inside a designated green safety zone overlay, high-fidelity cameras, realistic lighting.';
       }
-    } else {
-      setPromptText('A highly professional, editorial branding graphic for seeo.ai, emphasizing safety intelligence.');
+      return 'A modern minimalist SaaS graphic representing the STEEP business foresight framework, elegant geometric nodes in safety green and obsidian, clean branding.';
     }
-  }, [postContent]);
+    return 'A highly professional, editorial branding graphic for seeo.ai, emphasizing safety intelligence.';
+  })();
+
+  const effectivePrompt = promptText.trim() ? promptText : suggestedPrompt;
 
   const clearScheduledLogs = () => {
     logTimeoutsRef.current.forEach((id) => window.clearTimeout(id));
@@ -74,7 +74,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
 
     try {
       const result = await generateVisualAsset({
-        prompt: promptText,
+        prompt: effectivePrompt,
         style: activeStyle,
         guidance: isRedo ? guidance : undefined
       });
@@ -149,7 +149,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
         <textarea
           className="text-input-grounded"
           style={{ minHeight: '60px', fontSize: '13px' }}
-          value={promptText}
+          value={promptText || suggestedPrompt}
           onChange={(e) => setPromptText(e.target.value)}
         />
       </div>

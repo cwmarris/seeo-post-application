@@ -3,6 +3,7 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { createOpenAIImageMiddleware } from './server/openaiImages'
 import { createOpenAIDraftMiddleware } from './server/openaiDraft'
+import { createHealthMiddleware } from './server/health'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -14,6 +15,7 @@ export default defineConfig(({ mode }) => {
       {
         name: 'openai-images-dev-proxy',
         configureServer(server) {
+          server.middlewares.use(createHealthMiddleware())
           const middleware = createOpenAIImageMiddleware(
             () => env.OPENAI_API_KEY || process.env.OPENAI_API_KEY,
             () => env.OPENAI_IMAGE_MODEL || process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1'

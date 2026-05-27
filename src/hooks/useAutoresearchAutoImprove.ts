@@ -25,7 +25,10 @@ export function useAutoresearchAutoImprove({
   onImproved,
 }: UseAutoresearchAutoImproveOptions): void {
   const onImprovedRef = useRef(onImproved);
-  onImprovedRef.current = onImproved;
+
+  useEffect(() => {
+    onImprovedRef.current = onImproved;
+  }, [onImproved]);
 
   useEffect(() => {
     if (!enabled || !isAutoImproveEnabled() || !hasDraft || !input?.draft?.trim()) {

@@ -23,7 +23,7 @@ export const LinkedInPreview: React.FC<LinkedInPreviewProps> = ({
     try {
       const date = new Date(timeStr);
       return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' • ';
-    } catch (e) {
+    } catch {
       return 'Scheduled • ';
     }
   };
