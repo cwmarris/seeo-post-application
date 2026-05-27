@@ -1,11 +1,17 @@
 import type { IncomingMessage } from 'node:http';
 import type { ServerResponse } from 'node:http';
+import { diagnoseOpenAIKey, normalizeApiKey, type OpenAIKeyStatus } from './openaiEnv';
 
 export type HealthResponse = {
   ok: boolean;
   timestamp: string;
   version: string;
   warnings?: string[];
+  openai: {
+    configured: boolean;
+    status: OpenAIKeyStatus;
+    message: string;
+  };
 };
 
 function resolveVersion(): string {
@@ -17,19 +23,23 @@ function resolveVersion(): string {
   return process.env.npm_package_version ?? 'dev';
 }
 
-export function buildHealthResponse(): HealthResponse {
+export function buildHealthResponse(apiKeyRaw?: string): HealthResponse {
+  const openai = diagnoseOpenAIKey(apiKeyRaw ?? process.env.OPENAI_API_KEY);
   const warnings: string[] = [];
-  if (!process.env.OPENAI_API_KEY) warnings.push('OPENAI_API_KEY is not set');
+  if (!openai.configured) warnings.push(openai.message);
 
   return {
     ok: true,
     timestamp: new Date().toISOString(),
     version: resolveVersion(),
+    openai,
     ...(warnings.length ? { warnings } : {}),
   };
 }
 
-export function createHealthMiddleware(): (
+export function createHealthMiddleware(
+  getApiKey: () => string = () => normalizeApiKey(process.env.OPENAI_API_KEY)
+): (
   req: IncomingMessage,
   res: ServerResponse,
   next: () => void
@@ -41,10 +51,9 @@ export function createHealthMiddleware(): (
       return;
     }
 
-    const payload = buildHealthResponse();
+    const payload = buildHealthResponse(getApiKey());
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify(payload));
   };
 }
-

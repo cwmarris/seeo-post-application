@@ -3,6 +3,8 @@
  * Used by the Vite dev middleware; deploy the same contract behind /api/openai/images in production.
  */
 
+import { diagnoseOpenAIKey, normalizeApiKey, openAIKeyErrorMessage } from './openaiEnv';
+
 export interface OpenAIImageGenerateBody {
   prompt: string;
   style?: string;
@@ -59,12 +61,16 @@ export async function handleOpenAIImageGenerate(
   apiKey: string,
   model: string
 ): Promise<{ status: number; body: OpenAIImageGenerateResult | { error: string } }> {
-  if (!apiKey) {
+  const key = normalizeApiKey(apiKey);
+  if (!key) {
+    const diag = diagnoseOpenAIKey(apiKey);
     return {
       status: 503,
       body: {
-        error:
-          'OPENAI_API_KEY is not set. Add it to .env (see .env.example). Use the same key as your ChatGPT/OpenAI account.',
+        error: openAIKeyErrorMessage(
+          diag,
+          'Image generation requires a server-side key.'
+        ),
       },
     };
   }
@@ -89,7 +95,7 @@ export async function handleOpenAIImageGenerate(
   const response = await fetch(OPENAI_IMAGES_URL, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({

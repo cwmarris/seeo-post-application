@@ -1,7 +1,8 @@
 import { FOUNDER_PROFILES } from './mockData';
 import { filterBannedPhrases, type RLState } from './rlEngine';
 import { generateLinkedInPost } from './postGenerator';
-import { improveDraftViaApi, isOpenAIDraftConfigured } from './openaiDraft';
+import { improveDraftViaApi } from './openaiDraft';
+import { fetchOpenAIHealth } from './openaiStatus';
 
 export type ExperimentStatus = 'keep' | 'discard' | 'pending' | 'crash';
 
@@ -146,9 +147,10 @@ export async function runImproveDraftIteration(
   let replacedPhrases: string[];
   let source: 'local' | 'openai';
 
+  const health = await fetchOpenAIHealth();
   const tryOpenAI =
-    (input.preferOpenAI !== false && isOpenAIDraftConfigured()) ||
-    input.preferOpenAI === true;
+    input.preferOpenAI === true ||
+    (input.preferOpenAI !== false && health.configured);
 
   if (tryOpenAI) {
     try {

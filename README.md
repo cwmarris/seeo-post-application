@@ -8,8 +8,12 @@ STEEP AI Post Composer and analytics UI for seeo.ai founder LinkedIn workflows.
 npm install
 cp .env.example .env
 # Add OPENAI_API_KEY from https://platform.openai.com/api-keys (ChatGPT/OpenAI billing account)
-npm run dev
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
+
+After editing `.env`, **restart** the dev server — Vite only reads env files at startup.
+
+The app checks `/api/health` for `openai.configured` (the key never ships to the browser). Hover the header status badge if the key is missing or empty.
 
 ## OpenAI Visual Generator
 

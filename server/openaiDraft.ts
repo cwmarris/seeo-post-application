@@ -4,6 +4,7 @@
  */
 
 import type { IncomingMessage } from 'node:http';
+import { diagnoseOpenAIKey, normalizeApiKey, openAIKeyErrorMessage } from './openaiEnv';
 
 const OPENAI_CHAT_URL = 'https://api.openai.com/v1/chat/completions';
 
@@ -103,12 +104,16 @@ export async function handleGenerateDraftBody(
   apiKey: string,
   model: string
 ): Promise<{ status: number; body: GenerateDraftResult | { error: string } }> {
-  if (!apiKey) {
+  const key = normalizeApiKey(apiKey);
+  if (!key) {
+    const diag = diagnoseOpenAIKey(apiKey);
     return {
       status: 503,
       body: {
-        error:
-          'OPENAI_API_KEY is not set. Add it to .env (see .env.example). Required for LLM draft improve/generate.',
+        error: openAIKeyErrorMessage(
+          diag,
+          'LLM draft generate/improve requires a server-side key.'
+        ),
       },
     };
   }
@@ -123,12 +128,12 @@ export async function handleGenerateDraftBody(
   const response = await fetch(OPENAI_CHAT_URL, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       model,
-      temperature: 0.7,
+      temperature: parsed.mode === 'generate' ? 0.88 : 0.7,
       messages: [
         { role: 'system', content: buildSystemPrompt(parsed) },
         { role: 'user', content: buildUserPrompt(parsed) },

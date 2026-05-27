@@ -33,8 +33,9 @@ function draftApiUrl(): string {
   return `${base ?? ''}/api/generate/draft`;
 }
 
+/** @deprecated Use fetchOpenAIHealth() */
 export function isOpenAIDraftConfigured(): boolean {
-  return import.meta.env.DEV || Boolean(import.meta.env.VITE_DRAFT_API_BASE_URL);
+  return Boolean(import.meta.env.VITE_DRAFT_API_BASE_URL);
 }
 
 export async function improveDraftViaApi(

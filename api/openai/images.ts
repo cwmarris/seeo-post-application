@@ -4,6 +4,7 @@ import {
   type OpenAIImageGenerateBody,
   type OpenAIImageGenerateResult,
 } from '../../server/openaiImages';
+import { diagnoseOpenAIKey, normalizeApiKey, openAIKeyErrorMessage } from '../../server/openaiEnv';
 
 const OPENAI_IMAGES_URL = 'https://api.openai.com/v1/images/generations';
 
@@ -13,10 +14,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const apiKey = process.env.OPENAI_API_KEY ?? '';
+  const apiKey = normalizeApiKey(process.env.OPENAI_API_KEY);
   if (!apiKey) {
+    const diag = diagnoseOpenAIKey(process.env.OPENAI_API_KEY);
     res.status(503).json({
-      error: 'OPENAI_API_KEY is not set.',
+      error: openAIKeyErrorMessage(
+        diag,
+        'Image generation requires OPENAI_API_KEY in Vercel Environment Variables.'
+      ),
     });
     return;
   }

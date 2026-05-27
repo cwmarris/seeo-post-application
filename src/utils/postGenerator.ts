@@ -104,6 +104,15 @@ const POST_SEGMENTS: Record<string, Record<string, string[]>> = {
   }
 };
 
+export interface GeneratePostOptions {
+  variationSeed?: number;
+}
+
+function pickIndex(length: number, seed: number, salt: number): number {
+  if (length <= 0) return 0;
+  return Math.abs((seed + salt * 9973) % length);
+}
+
 /**
  * Generates an authentic seeo LinkedIn post based on user settings, STEEP framework, and RL configuration.
  */
@@ -112,26 +121,30 @@ export const generateLinkedInPost = (
   _tone: string,
   steepFocus: string[],
   groundedData: string,
-  rlState: RLState
+  rlState: RLState,
+  options?: GeneratePostOptions
 ): { content: string; replacedPhrases: string[]; wasFiltered: boolean } => {
   const authorData = POST_SEGMENTS[authorId] || POST_SEGMENTS.craig;
   const profile = FOUNDER_PROFILES.find(p => p.id === authorId) || FOUNDER_PROFILES[0];
-  
-  // 1. Construct the Hook
-  const hookIndex =
-    rlState.hookStyle === 'empirical' ? 2
-    : rlState.hookStyle === 'historical' ? 1
-    : 0;
+  const seed = options?.variationSeed ?? Date.now();
+
+  let hookIndex: number;
+  if (rlState.hookStyle === 'empirical') hookIndex = Math.min(2, authorData.hooks.length - 1);
+  else if (rlState.hookStyle === 'historical') hookIndex = Math.min(1, authorData.hooks.length - 1);
+  else hookIndex = pickIndex(authorData.hooks.length, seed, 1);
   const hook = authorData.hooks[hookIndex] || authorData.hooks[0];
 
-  // 2. STEEP Core Body
-  const activeForces = steepFocus.length > 0 ? steepFocus : ['Technological'];
+  const activeForces = [...(steepFocus.length > 0 ? steepFocus : ['Technological'])];
+  for (let i = activeForces.length - 1; i > 0; i--) {
+    const j = pickIndex(i + 1, seed, 10 + i);
+    [activeForces[i], activeForces[j]] = [activeForces[j], activeForces[i]];
+  }
   const bodyParagraphs: string[] = [];
 
-  activeForces.forEach(force => {
+  activeForces.forEach((force, idx) => {
     const key = force.toLowerCase();
     const paragraphList = authorData[key] || authorData.technological;
-    const randPara = paragraphList[Math.floor(Math.random() * paragraphList.length)];
+    const randPara = paragraphList[pickIndex(paragraphList.length, seed, 20 + idx)];
     bodyParagraphs.push(randPara);
   });
 
@@ -154,9 +167,8 @@ ${groundedLines.slice(1).map(line => `• ${line}`).join('\n')}`;
     emojiList = '📈 🛡️ ';
   }
 
-  // Choose Closing
   const closingList = authorData.closings;
-  const closing = closingList[Math.floor(Math.random() * closingList.length)];
+  const closing = closingList[pickIndex(closingList.length, seed, 40)];
 
   // Assemble full text
   let fullPost = `${emojiList}${hook}
@@ -168,12 +180,6 @@ ${groundedBlock}
 ${closing}
 
 #${profile.name.replace(/\s+/g, '')} #seeo #AI #WorkplaceSafety #STEEP`;
-
-  // Inject a bad word on purpose sometimes if the user hasn't rated anything yet, 
-  // to showcase the "banned words filtration" mechanism in action!
-  if (rlState.postCountRated <= 3 && !fullPost.toLowerCase().includes('delve') && rlState.bannedWords.includes('delve')) {
-    fullPost = fullPost.replace('explore', 'delve');
-  }
 
   // 5. Apply Reinforcement Learning Filtration (Banned Phrases)
   const { cleanText, replacedCount, replacements } = filterBannedPhrases(fullPost);

@@ -51,6 +51,7 @@ export async function generateVisualAsset(
   return payload;
 }
 
+/** @deprecated Use fetchOpenAIHealth() */
 export function isOpenAIImagesConfigured(): boolean {
-  return import.meta.env.DEV || Boolean(import.meta.env.VITE_IMAGE_API_BASE_URL);
+  return Boolean(import.meta.env.VITE_IMAGE_API_BASE_URL);
 }
