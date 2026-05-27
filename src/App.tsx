@@ -21,6 +21,16 @@ export const App: React.FC = () => {
     setActiveTab('dashboard'); // Switch to feed after adding
   };
 
+  const handleUpdateScheduledPost = (postId: string, updates: { content: string; scheduledTime: string; authorId: string }) => {
+    setPosts(
+      posts.map((p) => {
+        if (p.id !== postId) return p;
+        if (p.status !== 'scheduled') return p;
+        return { ...p, content: updates.content, scheduledTime: updates.scheduledTime, authorId: updates.authorId };
+      })
+    );
+  };
+
   const handlePostNow = (postId: string) => {
     setPosts(
       posts.map((p) => {
@@ -101,6 +111,7 @@ export const App: React.FC = () => {
             averageRating={rlState.averageRating}
             totalRated={rlState.postCountRated}
             handlePostNow={handlePostNow}
+            handleUpdateScheduledPost={handleUpdateScheduledPost}
             onGoToScheduler={() => setActiveTab('scheduler')}
           />
         )}

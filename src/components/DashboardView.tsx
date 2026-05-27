@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Sparkles, Calendar, Award, Zap } from 'lucide-react';
 import { type LinkedInPost, FOUNDER_PROFILES } from '../utils/mockData';
 import { LinkedInPreview } from './LinkedInPreview';
 import { PostPerformancePanel } from './PostPerformancePanel';
+import { ScheduledPostModal } from './ScheduledPostModal';
 
 interface DashboardViewProps {
   posts: LinkedInPost[];
@@ -10,6 +11,7 @@ interface DashboardViewProps {
   averageRating: number;
   totalRated: number;
   handlePostNow: (id: string) => void;
+  handleUpdateScheduledPost: (id: string, updates: { content: string; scheduledTime: string; authorId: string }) => void;
   onGoToScheduler?: () => void;
 }
 
@@ -19,10 +21,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   averageRating,
   totalRated,
   handlePostNow,
+  handleUpdateScheduledPost,
   onGoToScheduler
 }) => {
   const publishedPosts = posts.filter((p) => p.status === 'published');
   const scheduledPosts = posts.filter((p) => p.status === 'scheduled');
+  const scheduledById = useMemo(() => new Map(scheduledPosts.map((p) => [p.id, p])), [scheduledPosts]);
+  const [activeScheduledId, setActiveScheduledId] = useState<string | null>(null);
+  const activeScheduledPost = activeScheduledId ? scheduledById.get(activeScheduledId) ?? null : null;
 
   // Compute stat counters
   const totalLikes = publishedPosts.reduce((acc, p) => acc + (p.likes || 0), 0);
@@ -118,7 +124,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 const profile = FOUNDER_PROFILES.find((p) => p.id === post.authorId);
                 const date = post.scheduledTime ? new Date(post.scheduledTime) : new Date();
                 return (
-                  <div key={post.id} className="glass-card" style={{ padding: '14px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                  <div
+                    key={post.id}
+                    className="glass-card interactive queue-card"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open scheduled post ${post.id}`}
+                    onClick={() => setActiveScheduledId(post.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') setActiveScheduledId(post.id);
+                    }}
+                    style={{ padding: '14px', border: '1px solid rgba(255,255,255,0.03)' }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                       <img
                         src={profile?.avatar}
@@ -139,13 +156,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <button
                         className="btn btn-primary"
                         style={{ padding: '6px 12px', fontSize: '11px', flex: 1 }}
-                        onClick={() => handlePostNow(post.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePostNow(post.id);
+                        }}
                       >
                         Post Now
                       </button>
                       <button
                         className="btn btn-secondary"
                         style={{ padding: '6px 12px', fontSize: '11px' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveScheduledId(post.id);
+                        }}
                       >
                         Reschedule
                       </button>
@@ -161,6 +185,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
       </div>
+
+      <ScheduledPostModal
+        post={activeScheduledPost}
+        onClose={() => setActiveScheduledId(null)}
+        onPostNow={(id) => handlePostNow(id)}
+        onSave={(id, updates) => handleUpdateScheduledPost(id, updates)}
+      />
 
       <PostPerformancePanel
         posts={posts}
