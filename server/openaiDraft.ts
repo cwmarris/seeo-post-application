@@ -5,6 +5,7 @@
 
 import type { IncomingMessage } from 'node:http';
 import { diagnoseOpenAIKey, normalizeApiKey, openAIKeyErrorMessage } from './openaiEnv';
+import { getAuthorStyleGuide } from '../src/utils/authorStyles';
 
 const OPENAI_CHAT_URL = 'https://api.openai.com/v1/chat/completions';
 
@@ -67,6 +68,9 @@ Voice: ${body.authorName}. Bio: ${body.authorBio}
 Tone: ${tone}. Active STEEP lenses: ${steepFocus.join(', ')}. Prioritize STEEP weights: ${topSteep}.
 Hook style preference: ${rlContext.hookStyle}. Emoji density: ${rlContext.emojiDensity}.
 Average human draft rating so far: ${rlContext.averageRating}/5.
+
+Style guide (follow closely):
+${getAuthorStyleGuide(body.authorId)}
 
 NEVER use these banned phrases/words: ${rlContext.bannedWords.join('; ')}.
 Write like a seasoned operator, not generic AI marketing. Short paragraphs, 1-3 hashtags at end.

@@ -1,5 +1,5 @@
-import { FOUNDER_PROFILES } from './mockData';
 import { filterBannedPhrases, type RLState } from './rlEngine';
+import { getAuthorStyleSettings } from './authorStyles';
 
 /**
  * Custom generation library containing rich content blocks matching the co-founders' actual backgrounds,
@@ -125,7 +125,7 @@ export const generateLinkedInPost = (
   options?: GeneratePostOptions
 ): { content: string; replacedPhrases: string[]; wasFiltered: boolean } => {
   const authorData = POST_SEGMENTS[authorId] || POST_SEGMENTS.craig;
-  const profile = FOUNDER_PROFILES.find(p => p.id === authorId) || FOUNDER_PROFILES[0];
+  const style = getAuthorStyleSettings(authorId);
   const seed = options?.variationSeed ?? Date.now();
 
   let hookIndex: number;
@@ -166,9 +166,18 @@ ${groundedLines.slice(1).map(line => `• ${line}`).join('\n')}`;
   } else if (rlState.emojiDensity === 'medium') {
     emojiList = '📈 🛡️ ';
   }
+  const authorEmoji = style.emojiPrefixByDensity?.[rlState.emojiDensity] ?? '';
+  if (authorEmoji || rlState.emojiDensity === 'none') {
+    emojiList = authorEmoji;
+  }
 
   const closingList = authorData.closings;
   const closing = closingList[pickIndex(closingList.length, seed, 40)];
+
+  const hashtags =
+    style.preferredHashtags.length ?
+      style.preferredHashtags.slice(0, 5)
+    : ['#seeo', '#WorkplaceSafety', '#AI'];
 
   // Assemble full text
   const fullPost = `${emojiList}${hook}
@@ -179,7 +188,7 @@ ${groundedBlock}
 
 ${closing}
 
-#${profile.name.replace(/\s+/g, '')} #seeo #AI #WorkplaceSafety #STEEP`;
+${hashtags.join(' ')}`;
 
   // 5. Apply Reinforcement Learning Filtration (Banned Phrases)
   const { cleanText, replacedCount, replacements } = filterBannedPhrases(fullPost);

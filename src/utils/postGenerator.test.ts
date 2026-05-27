@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generateLinkedInPost } from './postGenerator';
 import { getRLState } from './rlEngine';
+import { getAuthorStyleSettings } from './authorStyles';
 
 describe('generateLinkedInPost', () => {
   it('varies content when STEEP lenses differ', () => {
@@ -23,5 +24,16 @@ describe('generateLinkedInPost', () => {
       variationSeed: 42,
     });
     expect(craig.content).not.toBe(dean.content);
+  });
+
+  it('applies Craig style hashtags and avoids author-name tag', () => {
+    const rl = getRLState();
+    const craig = generateLinkedInPost('craig', 'Thought Leader', ['Technological'], '', rl, {
+      variationSeed: 42,
+    });
+    const settings = getAuthorStyleSettings('craig');
+    expect(craig.content).toContain(settings.preferredHashtags[0]);
+    expect(craig.content).toContain(settings.preferredHashtags[settings.preferredHashtags.length - 1]);
+    expect(craig.content).not.toMatch(/#CraigMarris\b/);
   });
 });
