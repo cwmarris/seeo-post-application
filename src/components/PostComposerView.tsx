@@ -2,15 +2,16 @@ import React, { useMemo, useState } from 'react';
 import { Sparkles, Calendar, Send, ShieldAlert, Award, FlaskConical, RefreshCw } from 'lucide-react';
 import { FOUNDER_PROFILES, type LinkedInPost } from '../utils/mockData';
 import { type RLState, ratePostAndAdapt } from '../utils/rlEngine';
-import { generateLinkedInPost } from '../utils/postGenerator';
 import {
   runImproveDraftIteration,
   isAutoImproveEnabled,
   setAutoImproveEnabled,
   scoreDraft,
 } from '../utils/autoresearchLoop';
+import { generateDraftWithFallback } from '../utils/draftGeneration';
 import { isOpenAIDraftConfigured } from '../utils/openaiDraft';
 import { useAutoresearchAutoImprove } from '../hooks/useAutoresearchAutoImprove';
+import { useOpenAIHealth } from '../hooks/useOpenAIHealth';
 import { GroundedDataPanel } from './GroundedDataPanel';
 import { ImageGenerator } from './ImageGenerator';
 import { LinkedInPreview } from './LinkedInPreview';
@@ -42,6 +43,10 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
   const [improveMsg, setImproveMsg] = useState<string>('');
   const [autoImprove, setAutoImprove] = useState<boolean>(() => isAutoImproveEnabled());
   const [draftMetric, setDraftMetric] = useState<number | null>(null);
+  const [draftSource, setDraftSource] = useState<'openai' | 'local' | null>(null);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const { openai: openaiHealth } = useOpenAIHealth();
+  const openaiConfigured = openaiHealth?.configured ?? isOpenAIDraftConfigured();
 
   // RL Rating States
   const [userRating, setUserRating] = useState<number>(0);
@@ -102,31 +107,36 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
     setRlAppliedMsg('');
     setUserRating(0);
     setSelectedFeedback([]);
+    setGenerateError(null);
+    setDraftSource(null);
 
-    setTimeout(() => {
-      const result = generateLinkedInPost(
-        selectedAuthor,
-        selectedTone,
-        activeSteep,
-        groundedText,
-        rlState
-      );
-      setPostDraft(result.content);
-      setReplacedPhrases(result.replacedPhrases);
-      setWasFiltered(result.wasFiltered);
-      setDraftMetric(scoreDraft(result.content, rlState, activeSteep));
-      setImproveMsg('');
-      setIsGenerating(false);
-      
-      // Auto assign visual if keyword match, unless already chosen
-      if (!selectedImage) {
+    void (async () => {
+      try {
+        const result = await generateDraftWithFallback({
+          authorId: selectedAuthor,
+          tone: selectedTone,
+          steepFocus: activeSteep,
+          groundedText,
+          rlState,
+        });
+        setPostDraft(result.content);
+        setReplacedPhrases(result.replacedPhrases);
+        setWasFiltered(result.wasFiltered);
+        setDraftSource(result.source);
+        setDraftMetric(scoreDraft(result.content, rlState, activeSteep));
+        setImproveMsg('');
+
         if (result.content.toLowerCase().includes('forklift') || result.content.toLowerCase().includes('warehouse')) {
           setSelectedImage('/warehouse_safety.png');
         } else {
           setSelectedImage('/steep_framework.png');
         }
+      } catch (err) {
+        setGenerateError(err instanceof Error ? err.message : 'Draft generation failed');
+      } finally {
+        setIsGenerating(false);
       }
-    }, 1200);
+    })();
   };
 
   const handleImproveDraft = async () => {
@@ -338,7 +348,14 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
               </div>
             ) : postDraft ? (
               <>
-                {/* 1. Editable Text draft area */}
+                {(draftSource || generateError) && (
+                  <p style={{ fontSize: '11px', color: generateError ? 'var(--color-danger)' : 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                    {generateError ??
+                      (draftSource === 'openai' ?
+                        'Draft from OpenAI (unique each generate).'
+                      : 'Draft from local template (add OPENAI_API_KEY to .env and restart dev for LLM drafts).')}
+                  </p>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' }}>Draft Content Editor</label>
                   <textarea
@@ -439,9 +456,9 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
                       Auto-improve every 30 min (tab open)
                     </label>
                     <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                      {isOpenAIDraftConfigured() ?
-                        'OpenAI: via /api/generate/draft'
-                      : 'Local-only (set OPENAI_API_KEY for LLM)'}
+                      {openaiConfigured ?
+                        'OpenAI: /api/generate/draft'
+                      : openaiHealth?.message ?? 'Checking OpenAI…'}
                     </span>
                   </div>
                   {improveMsg && (

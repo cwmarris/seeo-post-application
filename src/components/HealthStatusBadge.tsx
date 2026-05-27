@@ -5,19 +5,22 @@ type HealthPayload = {
   timestamp: string;
   version: string;
   warnings?: string[];
+  openai?: { configured: boolean; message: string };
 };
 
 export function HealthStatusBadge(props: { label?: string; intervalMs?: number }) {
-  const label = props.label ?? 'Christchurch Hub';
+  const label = props.label ?? 'seeo Post Application';
   const intervalMs = props.intervalMs ?? 15_000;
 
   const [connected, setConnected] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [openaiHint, setOpenaiHint] = useState<string>('');
 
   const tooltip = useMemo(() => {
-    if (connected) return '';
-    return error || 'Health check failed';
-  }, [connected, error]);
+    if (!connected) return error || 'Health check failed';
+    if (openaiHint) return openaiHint;
+    return '';
+  }, [connected, error, openaiHint]);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +34,9 @@ export function HealthStatusBadge(props: { label?: string; intervalMs?: number }
         if (cancelled) return;
         setConnected(true);
         setError('');
+        setOpenaiHint(
+          payload.openai && !payload.openai.configured ? payload.openai.message : ''
+        );
       } catch (err) {
         if (cancelled) return;
         setConnected(false);

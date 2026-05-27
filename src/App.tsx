@@ -89,7 +89,7 @@ export const App: React.FC = () => {
           </div>
           
           <div className="header-actions">
-            <HealthStatusBadge label="Christchurch Hub" />
+            <HealthStatusBadge label="seeo Post Application" />
           </div>
         </header>
 
