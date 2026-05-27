@@ -31,9 +31,10 @@ export const FOUNDER_PROFILES: FounderProfile[] = [
     name: 'Craig Marris',
     role: 'Co-Founder, seeo.ai',
     avatar: '/craig_marris.png',
-    bio: 'Former co-founder of Christchurch-based telematics pioneer Coretex (acquired by EROAD). Passionate about safety governance, leadership culture, and translating corporate policies into on-site behavioral change.',
-    keyTopics: ['Safety Culture', 'Work as Imagined vs. Work as Done', 'Operational Governance', 'Transport & Logistics Safety'],
-    history: 'Founded Coretex and grew it to a leading global telematics player before its landmark acquisition by EROAD, where I served in key executive leadership roles. Now building seeo.ai to bridge safety gaps using video intelligence.',
+    bio: 'Co-founder of seeo.ai. Former President/Owner and co-founder of Coretex (later acquired by EROAD). Focused on safety governance, operational leadership, and closing the gap between “work as imagined” and “work as done” using practical, measurable systems.',
+    keyTopics: ['Safety governance', 'Operational leadership', 'Work as imagined vs. work as done', 'Telematics & fleet operations', 'AI for safety & productivity'],
+    history:
+      'Built and scaled a telematics business (Coretex) from New Zealand into overseas markets, ultimately joining EROAD after acquisition. Now building seeo.ai to use AI-driven video analysis to improve workplace safety and productivity outcomes.',
     linkedin: 'https://www.linkedin.com/in/craig-marris-2257831/'
   },
   {
@@ -41,9 +42,10 @@ export const FOUNDER_PROFILES: FounderProfile[] = [
     name: 'Dean Marris',
     role: 'Co-Founder, seeo.ai',
     avatar: '/dean_marris.png',
-    bio: 'Former co-founder of Coretex. Hardware/telemetry pioneer and telematics system architect. Expert in real-time sensor fusion, predictive risk management, and industrial operational intelligence.',
-    keyTopics: ['AI Video Intelligence', 'Predictive Analytics', 'IoT & Telemetry Integration', 'Real-time Safety Rules'],
-    history: 'Co-founded Coretex, architecting high-performance fleet safety and vehicle tracking telemetry. Bringing twenty years of telemetry data and operational control excellence to the video analytics domain with seeo.ai.',
+    bio: 'Co-founder of seeo.ai. Former co-founder of Coretex and Chief Data Science Officer at EROAD. Brings a data-science-led approach to safety and operations: turning messy real-world signals into decisions teams can act on.',
+    keyTopics: ['Data science leadership', 'Predictive analytics', 'Operational telemetry & IoT', 'AI for safety & workflow', 'Risk reduction'],
+    history:
+      'Co-founded Coretex and worked across telemetry-driven products and go-to-market expansion. At EROAD, led data science initiatives before co-founding seeo.ai to apply AI to existing camera infrastructure for safer, more productive operations.',
     linkedin: 'https://www.linkedin.com/in/deanmarris/'
   },
   {
@@ -51,9 +53,10 @@ export const FOUNDER_PROFILES: FounderProfile[] = [
     name: 'Bede Cammock-Elliott',
     role: 'Co-Founder, seeo.ai',
     avatar: '/bede_cammock.png',
-    bio: 'Founder of seedigital, a remote video monitoring pioneer operating since 2003. Expert in CCTV infrastructure evolution, safety compliance, manufacturing, and commercial risk mitigation.',
-    keyTopics: ['CCTV Video Evolution', 'Empirical Operations', 'Manufacturing Automation Safety', 'Continuous Risk Mitigation'],
-    history: 'Built seedigital into a premium commercial video monitoring and security service over 20+ years. Partnering with Craig and Dean to inject advanced edge-AI intelligence into existing security camera networks.',
+    bio: 'Co-founder of seeo.ai and Managing Director of seedigital (integrated remote video monitoring). Focused on using real-world video to surface “work as done”, redesign risky workflows, and sustain improvement through ongoing assurance.',
+    keyTopics: ['Remote video monitoring', 'Work design & risk reduction', 'Safety culture & assurance', 'CCTV infrastructure & operations', 'Continuous improvement'],
+    history:
+      'Built seedigital into an integrated remote video monitoring business, combining video with access control and intrusion detection. Now co-founding seeo.ai to turn existing camera networks into practical safety and workflow insights for high-risk environments.',
     linkedin: 'https://www.linkedin.com/in/bede-cammock-elliott-3364649/'
   }
 ];

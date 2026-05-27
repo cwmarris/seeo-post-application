@@ -171,7 +171,7 @@ ${groundedLines.slice(1).map(line => `• ${line}`).join('\n')}`;
   const closing = closingList[pickIndex(closingList.length, seed, 40)];
 
   // Assemble full text
-  let fullPost = `${emojiList}${hook}
+  const fullPost = `${emojiList}${hook}
 
 ${bodyParagraphs.join('\n\n')}
 
