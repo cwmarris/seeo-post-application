@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { buildHealthResponse } from '../server/health';
+import { buildHealthResponse } from '../server/health.js';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -7,6 +7,6 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  res.status(200).json(buildHealthResponse());
+  res.status(200).json(buildHealthResponse(process.env.OPENAI_API_KEY, { localDev: false }));
 }
 

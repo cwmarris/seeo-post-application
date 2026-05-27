@@ -1,8 +1,4 @@
-export type OpenAIKeyStatus =
-  | 'configured'
-  | 'empty'
-  | 'missing_key'
-  | 'missing_env_file';
+export type OpenAIKeyStatus = 'configured' | 'missing_key' | 'missing_env_file';
 
 export type OpenAIHealth = {
   configured: boolean;
