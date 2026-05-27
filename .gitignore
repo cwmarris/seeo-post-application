@@ -17,7 +17,9 @@ dist-ssr
 .env.*
 !.env.example
 .firecrawl
-.tmp_autoresearch
+
+# Autoresearch is tracked as a git submodule under vendor/.
+# (No large caches should live in this repo.)
 
 # Editor directories and files
 .vscode/*

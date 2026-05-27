@@ -3,11 +3,21 @@
 ## What exists today
 
 - **`scripts/autoresearch_generate.py`** — CLI stub that outputs structured JSON (title, hook, outline, draft markdown). It does **not** call [karpathy/autoresearch](https://github.com/karpathy/autoresearch).
-- **`.tmp_autoresearch/`** — Local clone of karpathy/autoresearch for reference only. It is GPU pretraining research, not LinkedIn copy generation. Excluded from git.
+- **`vendor/autoresearch/`** — Git submodule pointing at `karpathy/autoresearch` for reference only. It is GPU pretraining research, not LinkedIn copy generation.
 
 ## Vite app integration
 
 **Not wired.** Post Composer still uses `src/utils/postGenerator.ts` (template segments per founder) and does not invoke the Python script or any LLM API for drafts.
+
+## Keeping the submodule up to date
+
+This repo includes autoresearch as a **git submodule**. After cloning:
+
+- `git submodule update --init --recursive`
+
+To pull latest upstream changes later:
+
+- `git submodule update --remote --merge`
 
 ## Recommended next steps
 
