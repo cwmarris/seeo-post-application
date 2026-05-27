@@ -148,6 +148,9 @@
   height: 48px;
   border-radius: 50%;
   object-fit: cover;
+  aspect-ratio: 1 / 1;
+  display: block;
+  flex-shrink: 0;
   border: 1px solid #e0e0e0;
 }
 
@@ -514,6 +517,9 @@ select.text-input-grounded,
   height: 50px;
   border-radius: 50%;
   object-fit: cover;
+  aspect-ratio: 1 / 1;
+  display: block;
+  flex-shrink: 0;
   margin-bottom: 8px;
   border: 2px solid transparent;
   transition: border-color var(--transition-fast);
@@ -1003,6 +1009,9 @@ select.text-input-grounded,
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
+  aspect-ratio: 1 / 1;
+  display: block;
+  flex-shrink: 0;
 }
 
 .timeline-info {
