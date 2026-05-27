@@ -106,11 +106,111 @@ const POST_SEGMENTS: Record<string, Record<string, string[]>> = {
 
 export interface GeneratePostOptions {
   variationSeed?: number;
+  topic?: string;
+  /**
+   * Controls whether to force a particular template structure.
+   * - auto: choose based on author + topic
+   * - craig_milestone: force Craig milestone/announcement arc
+   * - default: use existing STEEP segment template
+   */
+  templateMode?: 'auto' | 'default' | 'craig_milestone';
 }
 
 function pickIndex(length: number, seed: number, salt: number): number {
   if (length <= 0) return 0;
   return Math.abs((seed + salt * 9973) % length);
+}
+
+function isCraigMilestoneTopic(topic: string | undefined): boolean {
+  const t = (topic ?? '').toLowerCase();
+  if (!t) return false;
+  return [
+    'announcement',
+    'announce',
+    'milestone',
+    'chapter',
+    'transition',
+    'role',
+    'joining',
+    'stepping',
+    'new role',
+    'launch',
+    'next',
+    'excited to share',
+  ].some((k) => t.includes(k));
+}
+
+function generateCraigMilestonePost(params: {
+  seed: number;
+  topic?: string;
+  groundedData: string;
+  hashtags: string[];
+}): string {
+  const { seed, topic, groundedData, hashtags } = params;
+
+  const originStarters = [
+    'A few years back, I started in a very different place.',
+    "I didn't set out to build a company in this space.",
+    'There’s a moment in most careers where the path becomes clearer.',
+  ];
+  const originDetails = [
+    'It began with a simple question: how do we help people get home safe, every day?',
+    'It started by watching how work actually happens on the floor — not how it’s written in a policy.',
+    'It started with seeing the cost of near-misses that never make it into a report.',
+  ];
+
+  const growthLines = [
+    'Growing Coretex and working alongside EROAD taught me what visibility can do when it’s used for coaching — not blame.',
+    "I learned that governance isn't paperwork. It's the daily habit of making risks visible early.",
+    'I saw firsthand that prevention beats hindsight, every time.',
+  ];
+
+  const transitionLines = [
+    'Over time, one gap kept standing out: manufacturing floors and warehouses still have too many blind spots.',
+    "The tools were there — CCTV was already installed — but it wasn't being used to prevent harm in the moment.",
+    'And it became hard to ignore the opportunity to shift from incidents to learning loops.',
+  ];
+
+  const announcementLines = [
+    `So here’s the update: I’m all-in on what we’re building at seeo.ai${topic?.trim() ? ` — ${topic.trim()}` : ''}.`,
+    `Today I’m sharing a new chapter for me${topic?.trim() ? `: ${topic.trim()}` : ''}.`,
+    `I’m stepping into the next phase of my work${topic?.trim() ? ` — ${topic.trim()}` : ''}.`,
+  ];
+
+  const missionLines = [
+    "We’re turning existing CCTV into real-time safety coaching — helping teams spot risk early and act fast.",
+    'Our mission is simple: make the invisible visible, so leaders can prevent harm without turning workplaces into surveillance cultures.',
+    'We’re building seeo.ai to strengthen safety governance with practical, on-the-floor evidence — not hindsight.',
+  ];
+
+  const thanksLines = [
+    "I’m grateful to the teams and customers who shaped my thinking — and to the operators who do the hard work every day.",
+    "Thank you to the people who’ve backed me, challenged me, and kept standards high — you know who you are.",
+    "I’m deeply grateful for the mentors, teammates, and family who’ve supported the journey so far.",
+  ];
+
+  const origin = `${originStarters[pickIndex(originStarters.length, seed, 101)]} ${originDetails[pickIndex(originDetails.length, seed, 102)]}`;
+  const growth = growthLines[pickIndex(growthLines.length, seed, 103)];
+  const transition = transitionLines[pickIndex(transitionLines.length, seed, 104)];
+  const announcement = announcementLines[pickIndex(announcementLines.length, seed, 105)];
+  const mission = missionLines[pickIndex(missionLines.length, seed, 106)];
+  const thanks = thanksLines[pickIndex(thanksLines.length, seed, 107)];
+
+  const groundedBlock = groundedData.trim()
+    ? (() => {
+        const groundedLines = groundedData.trim().split('\n').filter(Boolean);
+        const firstLine = groundedLines[0] ?? '';
+        const extra = groundedLines.slice(1, 3);
+        const extraText = extra.length ? `\n${extra.map((l) => `- ${l}`).join('\n')}` : '';
+        return `One concrete example that keeps me focused:\n- ${firstLine}${extraText}`;
+      })()
+    : 'One thing I keep coming back to: near-misses are data. If we can see them early, we can coach before someone gets hurt.';
+
+  // Ensure required phrases appear exactly as requested.
+  const tagline = 'Same drive, new frontier.';
+  const upbeat = 'onwards and upwards';
+
+  return `${origin}\n\n${growth}\n\n${transition}\n\n${announcement}\n\n${mission}\n\n${groundedBlock}\n\n${tagline}\n\n${thanks}\n\n${upbeat}\n\n${hashtags.join(' ')}`;
 }
 
 /**
@@ -127,6 +227,7 @@ export const generateLinkedInPost = (
   const authorData = POST_SEGMENTS[authorId] || POST_SEGMENTS.craig;
   const style = getAuthorStyleSettings(authorId);
   const seed = options?.variationSeed ?? Date.now();
+  const templateMode = options?.templateMode ?? 'auto';
 
   let hookIndex: number;
   if (rlState.hookStyle === 'empirical') hookIndex = Math.min(2, authorData.hooks.length - 1);
@@ -167,7 +268,10 @@ ${groundedLines.slice(1).map(line => `• ${line}`).join('\n')}`;
     emojiList = '📈 🛡️ ';
   }
   const authorEmoji = style.emojiPrefixByDensity?.[rlState.emojiDensity] ?? '';
-  if (authorEmoji || rlState.emojiDensity === 'none') {
+  const hasAuthorEmojiOverride =
+    !!style.emojiPrefixByDensity &&
+    Object.prototype.hasOwnProperty.call(style.emojiPrefixByDensity, rlState.emojiDensity);
+  if (hasAuthorEmojiOverride || rlState.emojiDensity === 'none') {
     emojiList = authorEmoji;
   }
 
@@ -179,7 +283,27 @@ ${groundedLines.slice(1).map(line => `• ${line}`).join('\n')}`;
       style.preferredHashtags.slice(0, 5)
     : ['#seeo', '#WorkplaceSafety', '#AI'];
 
-  // Assemble full text
+  const wantsCraigMilestone =
+    authorId === 'craig' &&
+    (templateMode === 'craig_milestone' ||
+      (templateMode === 'auto' && isCraigMilestoneTopic(options?.topic)));
+
+  if (wantsCraigMilestone) {
+    const milestone = generateCraigMilestonePost({
+      seed,
+      topic: options?.topic,
+      groundedData,
+      hashtags,
+    });
+    const { cleanText, replacedCount, replacements } = filterBannedPhrases(milestone);
+    return {
+      content: cleanText,
+      replacedPhrases: replacements,
+      wasFiltered: replacedCount > 0,
+    };
+  }
+
+  // Assemble full text (default template)
   const fullPost = `${emojiList}${hook}
 
 ${bodyParagraphs.join('\n\n')}

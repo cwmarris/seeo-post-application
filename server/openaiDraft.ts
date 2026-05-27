@@ -62,6 +62,11 @@ function buildSystemPrompt(body: GenerateDraftBody): string {
     .map(([k]) => k)
     .join(', ');
 
+  const craigMilestoneStructure =
+    body.authorId === 'craig'
+      ? `\nCraig milestone / announcement structure (use when the topic implies a transition, milestone, or announcement):\n- Origin story → Growth → Transition → Announcement → Mission → Tagline → Thanks → Upbeat close\n- Include the exact sentence: "Same drive, new frontier."\n- Include the phrase: "onwards and upwards"\n- Use generous paragraph breaks (each paragraph 1–2 sentences)\n- No emojis\n`
+      : '';
+
   return `You write LinkedIn posts for seeo.ai founders (workplace safety, AI video analytics on CCTV).
 
 Voice: ${body.authorName}. Bio: ${body.authorBio}
@@ -71,6 +76,7 @@ Average human draft rating so far: ${rlContext.averageRating}/5.
 
 Style guide (follow closely):
 ${getAuthorStyleGuide(body.authorId)}
+${craigMilestoneStructure}
 
 NEVER use these banned phrases/words: ${rlContext.bannedWords.join('; ')}.
 Write like a seasoned operator, not generic AI marketing. Short paragraphs, 1-3 hashtags at end.

@@ -20,23 +20,39 @@ export interface AuthorStyleSettings {
 
 const CRAIG_STYLE_GUIDE = `Author voice: Craig Marris (seeo.ai)
 
-Tone: seasoned operator + safety governance leader. Calm, direct, practical. No hype.
+Tone:
+- Reflective, grounded, and quietly confident.
+- Gratitude-forward (name people/groups when appropriate), never boastful.
+- Narrative-driven (clear arc), with an upbeat finish. No hype, no clichés.
 
-Structure:
-- Strong first line hook (1 sentence) that states a tension or truth.
-- 2–4 short paragraphs. Each paragraph is 1–2 sentences.
-- Ground the point in real operations (warehouse/manufacturing/fleet), not abstractions.
-- Close with a reflective question or a simple call-to-action to operators/leaders.
+Default structure (use when topic is a milestone / announcement / transition):
+- Origin story (where I started / what shaped me)
+- Growth (what I learned, built, or saw up close)
+- Transition (why this change, why now)
+- Announcement (what I'm doing next)
+- Mission (what we're building + why it matters)
+- Tagline (exact sentence): Same drive, new frontier.
+- Thanks (specific gratitude; mentors/teams/customers/family as fits)
+- Upbeat close (short, optimistic). Include the phrase: onwards and upwards
 
-Signature themes and language:
-- "Work as imagined" vs "work as done" (use sparingly, only when it fits).
-- Governance, diligence, coaching, learning loops; protect people without blame.
-- Visibility beats hindsight. Avoid surveillance framing; emphasize coaching + prevention.
-- References can include Coretex → EROAD learnings and why seeo exists.
+Ops + safety grounding (always):
+- Anchor in real operations (warehouse/manufacturing/fleet). Be specific.
+- Safety governance, diligence, coaching, learning loops; protect people without blame.
+- Emphasize visibility and prevention (avoid surveillance framing).
+- Coretex → EROAD learnings are allowed when relevant; connect to why seeo exists.
+
+Vocabulary + phrases to use sparingly but accurately:
+- "Same drive, new frontier."
+- "onwards and upwards"
+
+Length & punctuation:
+- Prefer 900–1600 characters.
+- Short paragraphs (1–2 sentences each). Use paragraph breaks generously.
+- Use simple punctuation; avoid em dashes and excessive exclamation marks.
 
 Formatting:
-- Minimal emojis (often none).
-- No long bullet lists; if bullets appear, keep to 2–4, concrete, and operational.
+- No emojis.
+- Avoid long bullet lists; if bullets appear, keep to 2–4 and concrete.
 - 3–5 hashtags at the end. Prefer: #WorkplaceSafety #SafetyGovernance #VideoAnalytics #Operations #seeo`;
 
 const DEFAULT_STYLE_GUIDE = `Write like a real founder/operator.
@@ -51,7 +67,7 @@ export const AUTHOR_STYLE_SETTINGS: Record<string, AuthorStyleSettings> = {
     preferredHashtags: ['#WorkplaceSafety', '#SafetyGovernance', '#VideoAnalytics', '#Operations', '#seeo'],
     emojiPrefixByDensity: {
       none: '',
-      medium: '🔍 ',
+      medium: '',
     },
   },
   dean: {

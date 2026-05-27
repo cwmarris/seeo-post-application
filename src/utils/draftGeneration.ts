@@ -74,7 +74,7 @@ export async function generateDraftWithFallback(
     input.steepFocus,
     input.groundedText,
     input.rlState,
-    { variationSeed: Date.now() }
+    { variationSeed: Date.now(), topic }
   );
 
   return {

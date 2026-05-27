@@ -36,4 +36,19 @@ describe('generateLinkedInPost', () => {
     expect(craig.content).toContain(settings.preferredHashtags[settings.preferredHashtags.length - 1]);
     expect(craig.content).not.toMatch(/#CraigMarris\b/);
   });
+
+  it('uses Craig milestone structure when template mode enabled', () => {
+    const rl = getRLState();
+    const craig = generateLinkedInPost('craig', 'Thought Leader', ['Social'], '', rl, {
+      variationSeed: 7,
+      topic: 'Announcement: a new chapter',
+      templateMode: 'craig_milestone',
+    });
+
+    expect(craig.content).toContain('Same drive, new frontier.');
+    expect(craig.content).toMatch(/onwards and upwards/i);
+
+    // Paragraph breaks: should contain multiple blank-line separators.
+    expect(craig.content.split('\n\n').length).toBeGreaterThanOrEqual(7);
+  });
 });
