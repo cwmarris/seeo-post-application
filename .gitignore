@@ -31,3 +31,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.vercel
+
+# Convex deployment config (contains deployment name; not the deploy key)
+.env.local

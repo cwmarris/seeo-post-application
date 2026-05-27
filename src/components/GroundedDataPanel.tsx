@@ -1,63 +1,43 @@
-import React, { useState } from 'react';
-import { Upload, FileText, Sparkles } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Upload, FileText, Trash2, Loader2 } from 'lucide-react';
+import type { Id } from '../../convex/_generated/dataModel';
+import type { GroundedDocumentRow } from '../hooks/groundedDocumentsTypes';
 
 interface GroundedDataPanelProps {
-  groundedText: string;
-  setGroundedText: (text: string) => void;
+  convexReady: boolean;
+  documents: GroundedDocumentRow[];
+  isLoading: boolean;
+  selectedDocIds: Id<'groundedDocuments'>[];
+  setSelectedDocIds: React.Dispatch<React.SetStateAction<Id<'groundedDocuments'>[]>>;
+  manualGroundedText: string;
+  setManualGroundedText: (text: string) => void;
+  onUploadFiles: (files: FileList | File[]) => Promise<void>;
+  onSavePastedContext: () => Promise<void>;
+  onDeleteDocument: (documentId: Id<'groundedDocuments'>) => Promise<void>;
+  uploadError: string | null;
+  isUploading: boolean;
 }
-
-interface GroundedTemplate {
-  name: string;
-  type: 'pdf' | 'csv' | 'url';
-  content: string;
-}
-
-const TEMPLATES: GroundedTemplate[] = [
-  {
-    name: 'forklift_nearmiss_log.csv',
-    type: 'csv',
-    content: `Incident ID,Date,Location,Asset,ViolationType,Distance,PPEStatus
-INC-2248,2026-05-18,Aisle C,Forklift #4,Pedestrian Proximity,1.2m (Threshold 3m),Hi-Vis Active
-INC-2249,2026-05-19,Corridor B,Forklift #2,Speed Limit Exceeded,14km/h (Limit 8km/h),N/A
-INC-2250,2026-05-22,Zone D Loading,Forklift #9,No-Go Zone Entry,0.0m (Inside Restricted Zone),Hi-Vis Active`
-  },
-  {
-    name: 'directors_compliance_audit.pdf',
-    type: 'pdf',
-    content: `Health & Safety at Work Act (HSWA) compliance directives for board directors:
-- Directors must take 'all practicable steps' to manage operational risks.
-- Written checklists and spreadsheet audits are considered hindsight-based and insufficient.
-- Visual, automated telemetry validation (continuous auditing) is the gold standard of safety governance.
-- seeo.ai visual 'cultural artefacts' provide absolute confirmation of safety diligence.`
-  },
-  {
-    name: 'seedigital_20yr_cctv_evolution.txt',
-    type: 'pdf',
-    content: `Historical review of CCTV application in NZ commerce (seedigital 2003-2026):
-- 2003: legacy CCTV systems designed for asset protection and evidence collection post-theft.
-- 2012: introduction of remote live guard validation and network video recorders.
-- 2026: layering active edge-AI video analytics to turn cameras into real-time safety telemetry systems.
-- Conclusion: Passive security systems must transition into active operational risk mitigators.`
-  }
-];
 
 export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
-  groundedText,
-  setGroundedText
+  convexReady,
+  documents,
+  isLoading,
+  selectedDocIds,
+  setSelectedDocIds,
+  manualGroundedText,
+  setManualGroundedText,
+  onUploadFiles,
+  onSavePastedContext,
+  onDeleteDocument,
+  uploadError,
+  isUploading,
 }) => {
-  const [activeFiles, setActiveFiles] = useState<string[]>([]);
   const [isDndActive, setIsDndActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImportTemplate = (tpl: GroundedTemplate) => {
-    if (activeFiles.includes(tpl.name)) {
-      // Remove
-      setActiveFiles(activeFiles.filter((f) => f !== tpl.name));
-      setGroundedText('');
-    } else {
-      // Add
-      setActiveFiles([...activeFiles, tpl.name]);
-      setGroundedText(tpl.content);
-    }
+  const handleFiles = (files: FileList | null) => {
+    if (!files?.length) return;
+    void onUploadFiles(files);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -72,12 +52,7 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDndActive(false);
-    
-    // Simulate drop file
-    const mockFileName = 'uploaded_incident_report.pdf';
-    setActiveFiles([...activeFiles, mockFileName]);
-    setGroundedText(`Source: /uploads/${mockFileName}
-Incident summary: Forklift operation was flagged under speed limit violations in Loading Zone 2. The dynamic video safety analytics platform tracked the forklift operating at 12km/h (safety threshold is 6km/h) for 45 seconds while pedestrians were active in the vicinity. Bounding box warning triggered successfully.`);
+    handleFiles(e.dataTransfer.files);
   };
 
   return (
@@ -86,59 +61,146 @@ Incident summary: Forklift operation was flagged under speed limit violations in
         <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <FileText size={18} color="var(--color-primary)" /> Grounded Context & Files
         </h3>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Grounded generation</span>
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+          {convexReady ? 'Convex-backed' : 'Convex not configured'}
+        </span>
       </div>
 
-      {/* Drag & Drop simulated area */}
+      {!convexReady && (
+        <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+          Set <code>VITE_CONVEX_URL</code> and run <code>npx convex dev</code> to persist uploads. Manual paste still works for this session.
+        </p>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".txt,.csv,text/plain,text/csv"
+        multiple
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          handleFiles(e.target.files);
+          e.target.value = '';
+        }}
+      />
+
       <div
         className={`dnd-area ${isDndActive ? 'active' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={() => {
-          setActiveFiles([...activeFiles, 'manual_site_audit.csv']);
-          setGroundedText('Audit Date: 2026-05-24\nFacility: Christchurch Depot\nFindings: Bounding boxes verified. 10 near-miss events logged. Corrective safety vest coaching executed.');
+        onClick={() => fileInputRef.current?.click()}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
         }}
       >
-        <Upload className="dnd-icon" />
-        <div style={{ fontSize: '13px', fontWeight: 600 }}>Drag SOPs, logs, or reports here</div>
-        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Supports PDF, CSV, or TXT (Simulated)</div>
-      </div>
-
-      {/* Quick Import Templates */}
-      <div style={{ marginTop: '16px' }}>
-        <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <Sparkles size={12} color="var(--color-primary)" />
-          <span>Quick Context Presets (Co-founder Data)</span>
+        {isUploading ?
+          <Loader2 className="dnd-icon" style={{ animation: 'spin 1s linear infinite' }} />
+        : <Upload className="dnd-icon" />}
+        <div style={{ fontSize: '13px', fontWeight: 600 }}>
+          {isUploading ? 'Uploading…' : 'Drag SOPs, logs, or reports here'}
         </div>
-        <div className="file-list">
-          {TEMPLATES.map((tpl) => {
-            const isActive = activeFiles.includes(tpl.name);
-            return (
-              <div
-                key={tpl.name}
-                className={`file-tag active ${isActive ? '' : 'inactive'}`}
-                onClick={() => handleImportTemplate(tpl)}
-                style={{ cursor: 'pointer', opacity: isActive ? 1 : 0.6, border: isActive ? '1px solid var(--color-primary)' : '1px solid var(--border-glass)' }}
-              >
-                {tpl.type === 'csv' ? <FileText size={12} /> : <FileText size={12} />}
-                <span>{tpl.name}</span>
-                {isActive && <span style={{ fontSize: '10px', color: 'var(--color-primary)', fontWeight: 800 }}>✓</span>}
-              </div>
-            );
-          })}
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+          TXT and CSV up to 512KB (PDF coming later)
         </div>
       </div>
 
-      {/* Manual Input text box */}
+      {uploadError && (
+        <p style={{ fontSize: '12px', color: '#f87171', marginTop: '8px' }} role="alert">
+          {uploadError}
+        </p>
+      )}
+
       <div style={{ marginTop: '16px' }}>
-        <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' }}>Direct Grounded Context Editor</label>
+        <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
+          Saved documents {isLoading ? '(loading…)' : `(${documents.length})`}
+        </div>
+        {documents.length === 0 && !isLoading ?
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No saved documents yet.</p>
+        : <div className="file-list">
+            {documents.map((doc) => {
+              const isSelected = selectedDocIds.includes(doc._id);
+              return (
+                <div
+                  key={doc._id}
+                  className={`file-tag active ${isSelected ? '' : 'inactive'}`}
+                  style={{
+                    cursor: 'pointer',
+                    opacity: isSelected ? 1 : 0.65,
+                    border: isSelected ? '1px solid var(--color-primary)' : '1px solid var(--border-glass)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedDocIds((prev) =>
+                        prev.includes(doc._id) ?
+                          prev.filter((id) => id !== doc._id)
+                        : [...prev, doc._id]
+                      )
+                    }
+                    style={{
+                      all: 'unset',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      flex: 1,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <FileText size={12} />
+                    <span>{doc.name}</span>
+                    {isSelected && (
+                      <span style={{ fontSize: '10px', color: 'var(--color-primary)', fontWeight: 800 }}>✓</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Delete ${doc.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void onDeleteDocument(doc._id);
+                    }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        }
+      </div>
+
+      <div style={{ marginTop: '16px' }}>
+        <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' }}>
+          Direct Grounded Context Editor
+        </label>
         <textarea
           className="text-input-grounded"
-          placeholder="Paste real website text, forklift incident details, or director statements to inject into the post generation..."
-          value={groundedText}
-          onChange={(e) => setGroundedText(e.target.value)}
+          placeholder="Paste incident details, audit notes, or director statements. Selected saved docs are merged into draft generation."
+          value={manualGroundedText}
+          onChange={(e) => setManualGroundedText(e.target.value)}
         />
+        {convexReady && manualGroundedText.trim() && (
+          <button
+            type="button"
+            className="btn-secondary"
+            style={{ marginTop: '8px', fontSize: '12px' }}
+            disabled={isUploading}
+            onClick={() => void onSavePastedContext()}
+          >
+            Save paste as document
+          </button>
+        )}
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { generateVisualAsset } from '../utils/openaiImages';
 
 interface ImageGeneratorProps {
   postContent: string;
+  groundedContextSnippet?: string;
   selectedImage: string | undefined;
   setSelectedImage: (img: string | undefined) => void;
 }
@@ -21,6 +22,7 @@ const STYLES = [
 
 export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   postContent,
+  groundedContextSnippet,
   selectedImage,
   setSelectedImage
 }) => {
@@ -42,7 +44,12 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     return 'A highly professional, editorial branding graphic for seeo.ai, emphasizing safety intelligence.';
   })();
 
-  const effectivePrompt = promptText.trim() ? promptText : suggestedPrompt;
+  const groundedHint =
+    groundedContextSnippet?.trim() ?
+      ` Grounded facts to reflect visually: ${groundedContextSnippet.trim().slice(0, 400)}`
+    : '';
+
+  const effectivePrompt = (promptText.trim() ? promptText : suggestedPrompt) + groundedHint;
 
   const clearScheduledLogs = () => {
     logTimeoutsRef.current.forEach((id) => window.clearTimeout(id));

@@ -12,7 +12,7 @@ import { generateDraftWithFallback } from '../utils/draftGeneration';
 import { isOpenAIDraftConfigured } from '../utils/openaiDraft';
 import { useAutoresearchAutoImprove } from '../hooks/useAutoresearchAutoImprove';
 import { useOpenAIHealth } from '../hooks/useOpenAIHealth';
-import { GroundedDataPanel } from './GroundedDataPanel';
+import { GroundedDocumentsBridge } from './GroundedDocumentsBridge';
 import { ImageGenerator } from './ImageGenerator';
 import { LinkedInPreview } from './LinkedInPreview';
 
@@ -31,7 +31,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
   const [selectedAuthor, setSelectedAuthor] = useState<string>('craig');
   const [selectedTone, setSelectedTone] = useState<string>('Thought Leader');
   const [activeSteep, setActiveSteep] = useState<string[]>(['Social', 'Technological']);
-  const [groundedText, setGroundedText] = useState<string>('');
+  const [groundedText, setGroundedText] = useState('');
   
   // Generation results
   const [postDraft, setPostDraft] = useState<string>('');
@@ -287,7 +287,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
           </div>
 
           {/* C. Grounded Data */}
-          <GroundedDataPanel groundedText={groundedText} setGroundedText={setGroundedText} />
+          <GroundedDocumentsBridge onEffectiveGroundedTextChange={setGroundedText} />
 
           {/* D. Tone Selector & Generation Button */}
           <div className="glass-card" style={{ padding: '20px' }}>
@@ -322,6 +322,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
           {/* E. Image Generation Integration */}
           <ImageGenerator
             postContent={postDraft}
+            groundedContextSnippet={groundedText}
             selectedImage={selectedImage}
             setSelectedImage={setSelectedImage}
           />

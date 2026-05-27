@@ -3,7 +3,7 @@
  * Used by the Vite dev middleware; deploy the same contract behind /api/openai/images in production.
  */
 
-import { diagnoseOpenAIKey, normalizeApiKey, openAIKeyErrorMessage } from './openaiEnv';
+import { diagnoseOpenAIKey, normalizeApiKey, openAIKeyErrorMessage } from './openaiEnv.js';
 
 export interface OpenAIImageGenerateBody {
   prompt: string;

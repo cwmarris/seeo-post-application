@@ -4,8 +4,8 @@
  */
 
 import type { IncomingMessage } from 'node:http';
-import { diagnoseOpenAIKey, normalizeApiKey, openAIKeyErrorMessage } from './openaiEnv';
-import { getAuthorStyleGuide } from '../src/utils/authorStyles';
+import { diagnoseOpenAIKey, normalizeApiKey, openAIKeyErrorMessage } from './openaiEnv.js';
+import { getAuthorStyleGuide } from '../src/utils/authorStyles.js';
 
 const OPENAI_CHAT_URL = 'https://api.openai.com/v1/chat/completions';
 

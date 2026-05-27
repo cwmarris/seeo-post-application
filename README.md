@@ -37,6 +37,24 @@ See [docs/AUTORESEARCH.md](./docs/AUTORESEARCH.md) — **not** the GPU submodule
 
 LinkedIn analytics MVP: [docs/LINKEDIN_MONITORING.md](./docs/LINKEDIN_MONITORING.md).
 
+## Grounded Context (Production)
+
+Post Composer **Grounded Context & Files** uses [Convex](https://convex.dev) for real TXT/CSV uploads and paste-to-save documents (no simulated drops). See [docs/GROUNDED_CONTEXT.md](./docs/GROUNDED_CONTEXT.md).
+
+| Variable | Where | Purpose |
+|----------|--------|---------|
+| `VITE_CONVEX_URL` | Client (Vercel + `.env`) | Convex deployment URL from dashboard or `npx convex dev` |
+| `CONVEX_DEPLOYMENT` | `.env.local` (auto) | Used by Convex CLI; not needed in Vercel frontend |
+
+```bash
+npx convex dev    # first-time: creates project, .env.local, deploys functions
+npm run convex:deploy   # production backend
+```
+
+**Vercel:** set `VITE_CONVEX_URL` to your **production** Convex URL (Settings → Deployment URL). Keep `OPENAI_API_KEY` server-side as today.
+
+**Convex dashboard:** no extra secrets required for grounded docs; optional `authorId` is reserved for future auth.
+
 ```bash
 python3 scripts/autoresearch_generate.py \
   --topic "Forklift pedestrian safety" \
@@ -52,3 +70,5 @@ python3 scripts/autoresearch_generate.py \
 | `npm run build` | Production build |
 | `npm run test` | Vitest |
 | `npm run lint` | ESLint |
+| `npm run convex:dev` | Convex dev deployment + codegen |
+| `npm run convex:deploy` | Deploy Convex functions to production |

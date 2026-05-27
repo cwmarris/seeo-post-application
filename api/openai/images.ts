@@ -3,8 +3,12 @@ import {
   buildImagePrompt,
   type OpenAIImageGenerateBody,
   type OpenAIImageGenerateResult,
-} from '../../server/openaiImages';
-import { diagnoseOpenAIKey, normalizeApiKey, openAIKeyErrorMessage } from '../../server/openaiEnv';
+} from '../../server/openaiImages.js';
+import {
+  diagnoseOpenAIKey,
+  normalizeApiKey,
+  openAIKeyErrorMessage,
+} from '../../server/openaiEnv.js';
 
 const OPENAI_IMAGES_URL = 'https://api.openai.com/v1/images/generations';
 
