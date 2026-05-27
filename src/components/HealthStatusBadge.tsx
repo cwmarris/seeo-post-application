@@ -8,7 +8,7 @@ type HealthPayload = {
 };
 
 export function HealthStatusBadge(props: { label?: string; intervalMs?: number }) {
-  const label = props.label ?? 'Christchurch Hub Connected';
+  const label = props.label ?? 'Christchurch Hub';
   const intervalMs = props.intervalMs ?? 15_000;
 
   const [connected, setConnected] = useState<boolean>(false);

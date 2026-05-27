@@ -25,7 +25,7 @@ describe('HealthStatusBadge', () => {
 
   it('shows Connected after successful /api/health fetch', async () => {
     vi.stubGlobal('fetch', mockFetchOk());
-    render(<HealthStatusBadge intervalMs={10_000} label="Christchurch Hub Connected" />);
+    render(<HealthStatusBadge intervalMs={10_000} label="Christchurch Hub" />);
 
     expect(await screen.findByText(/Connected/)).toBeInTheDocument();
     expect(screen.getByTestId('health-status-badge')).toHaveAttribute('title', '');
@@ -49,12 +49,20 @@ describe('HealthStatusBadge', () => {
   it('shows Disconnected and tooltip on error', async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error('Network down'));
     vi.stubGlobal('fetch', fetchMock);
-    render(<HealthStatusBadge intervalMs={10_000} />);
+    render(<HealthStatusBadge intervalMs={10_000} label="Christchurch Hub" />);
 
     expect(screen.getByText(/Disconnected/)).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByTestId('health-status-badge')).toHaveAttribute('title', 'Network down');
     });
+  });
+
+  it('does not imply connectedness in the label', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Down')));
+    render(<HealthStatusBadge intervalMs={10_000} label="Christchurch Hub" />);
+
+    expect(screen.getByTestId('health-status-badge').textContent).toMatch(/Christchurch Hub — Disconnected/);
+    expect(screen.getByTestId('health-status-badge').textContent).not.toMatch(/Christchurch Hub Connected/);
   });
 });
 
