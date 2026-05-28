@@ -52,5 +52,17 @@ describe('App', () => {
     const editor = await screen.findByLabelText('Draft Content Editor', {}, { timeout: 4000 });
     expect(editor).not.toHaveValue('');
   }, 8000);
+
+  it('shows model banner and refinement context after generating a draft', async () => {
+    renderApp(<App />);
+
+    fireEvent.click(screen.getAllByText('Post Composer')[0]);
+    fireEvent.click(screen.getByRole('button', { name: /generate draft/i }));
+
+    await screen.findByLabelText('Draft Content Editor', {}, { timeout: 4000 });
+    expect(screen.getByTestId('model-indicator-banner')).toBeInTheDocument();
+    expect(screen.getByLabelText('Refinement context')).toBeInTheDocument();
+    expect(screen.getByTestId('composer-rate-train-section')).toBeInTheDocument();
+  }, 8000);
 });
 

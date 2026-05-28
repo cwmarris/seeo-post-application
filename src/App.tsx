@@ -142,6 +142,7 @@ export const App: React.FC = () => {
             rlState={rlState}
             updateRlState={updateRlState}
             onTelemetryRefresh={() => setTelemetryTick((t) => t + 1)}
+            onGoToOptimizer={() => setActiveTab('optimizer')}
           />
         )}
 

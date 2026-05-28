@@ -22,6 +22,7 @@ interface PostComposerViewProps {
   rlState: RLState;
   updateRlState: (state: RLState) => void;
   onTelemetryRefresh?: () => void;
+  onGoToOptimizer?: () => void;
 }
 
 export const PostComposerView: React.FC<PostComposerViewProps> = ({
@@ -29,6 +30,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
   rlState,
   updateRlState,
   onTelemetryRefresh,
+  onGoToOptimizer,
 }) => {
   // Post inputs
   const [selectedAuthor, setSelectedAuthor] = useState<string>('craig');
@@ -310,7 +312,18 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
           <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
               <h3 className="panel-title" style={{ margin: 0 }}>3. Draft generation</h3>
-              {!healthLoading && <ModelIndicator lastGeneratedModel={lastGeneratedModel} compact />}
+              {!healthLoading && <ModelIndicator lastGeneratedModel={lastGeneratedModel} variant="compact" />}
+            </div>
+            <div className="composer-context-guide" data-testid="composer-generation-hint">
+              <p style={{ margin: 0 }}>
+                <strong>Generation instructions</strong> — first draft &amp; regenerate (left field below).
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>Refinement context</strong> — appears in Live Editor after you generate; powers Improve draft.
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>Rate &amp; train</strong> — stars at the bottom of the editor; updates RL weights for the next draft.
+              </p>
             </div>
             <div>
               <label
@@ -328,7 +341,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
                 onChange={(e) => setGenerationInstructions(e.target.value)}
               />
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '6px 0 0', lineHeight: 1.4 }}>
-                Used for <strong>Generate Draft</strong> and regenerate only — not the improve loop.
+                Sent to <strong>Generate Draft</strong> and <strong>Regenerate</strong> only — not Improve draft.
               </p>
             </div>
             <div className="composer-generate-row">
@@ -387,11 +400,16 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
         {/* Right Side: Live LinkedIn sandbox and editing preview */}
         <div className="composer-right">
           <div className="glass-card" style={{ padding: '20px', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div className="panel-header">
-              <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Send size={18} color="var(--color-primary)" /> Live Editor & LinkedIn Sandbox
-              </h3>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Pixel-perfect simulator</span>
+            <div className="panel-header" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px', width: '100%' }}>
+                <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Send size={18} color="var(--color-primary)" /> Live Editor & LinkedIn Sandbox
+                </h3>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Pixel-perfect simulator</span>
+              </div>
+              {postDraft && !isGenerating && !healthLoading && (
+                <ModelIndicator lastGeneratedModel={lastGeneratedModel} variant="banner" />
+              )}
             </div>
 
             {/* If generating, display beautiful circular loader */}
@@ -405,19 +423,37 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
               </div>
             ) : postDraft ? (
               <>
-                {(draftSource || generateError || lastGeneratedModel) && (
+                <div className="composer-context-guide" data-testid="composer-context-guide">
+                  <p style={{ margin: 0 }}>
+                    <strong>Generation instructions</strong> (left) — shapes the first draft only.
+                  </p>
+                  <p style={{ margin: 0 }}>
+                    <strong>Refinement context</strong> (below) — tell Improve draft how to edit this version.
+                  </p>
+                  <p style={{ margin: 0 }}>
+                    <strong>Rate &amp; train</strong> (bottom) — star rating + tags update RL weights for future posts.
+                  </p>
+                  {onGoToOptimizer && (
+                    <button
+                      type="button"
+                      className="composer-optimizer-link"
+                      onClick={onGoToOptimizer}
+                    >
+                      Open RL Engine &amp; Tuning for banned phrases and STEEP weights →
+                    </button>
+                  )}
+                </div>
+
+                {(draftSource || generateError) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {generateError ?
                       <p style={{ fontSize: '11px', color: 'var(--color-danger)', margin: 0, lineHeight: 1.4 }}>
                         {generateError}
                       </p>
                     : draftSource === 'openai' ?
-                      <>
-                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
-                          Draft from OpenAI (unique each generate).
-                        </p>
-                        <ModelIndicator lastGeneratedModel={lastGeneratedModel} compact />
-                      </>
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                        Draft from OpenAI (unique each generate).
+                      </p>
                     : draftSource === 'local' ?
                       <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
                         Draft from local template (add OPENAI_API_KEY to .env and restart dev for LLM drafts).
@@ -454,23 +490,38 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
                   </div>
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label
-                    htmlFor="revision-guidance"
-                    style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' }}
-                  >
-                    Revision guidance
-                  </label>
+                <div
+                  style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+                  data-testid="composer-refinement-section"
+                >
+                  <div className="composer-refinement-header">
+                    <label
+                      htmlFor="revision-guidance"
+                      style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' }}
+                    >
+                      Refinement context
+                    </label>
+                    {onGoToOptimizer && (
+                      <button
+                        type="button"
+                        className="composer-optimizer-link"
+                        onClick={onGoToOptimizer}
+                      >
+                        Banned phrases &amp; weights →
+                      </button>
+                    )}
+                  </div>
                   <textarea
                     id="revision-guidance"
                     className="text-input-grounded"
-                    placeholder="How to improve this draft: sharper hook, cut paragraph 2, stronger CTA…"
-                    style={{ minHeight: '64px', fontSize: '13px', lineHeight: 1.4 }}
+                    placeholder="Additional context to refine this draft: sharper hook, cut paragraph 2, stronger CTA, tone tweaks…"
+                    style={{ minHeight: '72px', fontSize: '13px', lineHeight: 1.4 }}
                     value={revisionGuidance}
                     onChange={(e) => setRevisionGuidance(e.target.value)}
+                    aria-label="Refinement context"
                   />
                   <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
-                    Sent only to <strong>Improve draft</strong> (and auto-improve), not initial generation.
+                    Highest priority for <strong>Improve draft</strong> and auto-improve — not used on Generate Draft.
                   </p>
                 </div>
 
@@ -599,12 +650,19 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
                 </div>
 
                 {/* 5. Reinforcement Learning Feedback Star panel */}
-                <div className="post-rating-container">
+                <div className="post-rating-container" data-testid="composer-rate-train-section">
                   <span style={{ fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Award size={14} color="var(--color-warning)" />
-                    Rate AI Draft and Adapt RL Weights
+                    Rate &amp; train the post generator
                   </span>
-                  <div className="stars-row">
+                  <p className="composer-rating-intro">
+                    Pick 1–5 stars, optionally tag what worked or failed, then click{' '}
+                    <strong>Train RL Model</strong> to nudge STEEP weights and voice rules for your next draft.
+                    {onGoToOptimizer ?
+                      ' Fine-tune banned phrases and sliders in RL Engine & Tuning.'
+                    : null}
+                  </p>
+                  <div className="stars-row" role="group" aria-label="Draft quality rating">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
