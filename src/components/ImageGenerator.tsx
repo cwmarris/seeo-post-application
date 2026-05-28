@@ -101,7 +101,8 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       }, 1500);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Image generation failed';
-      addLog(`Error: ${message}`, 200);
+      const time = new Date().toLocaleTimeString();
+      setLogs((prev) => [...prev, { timestamp: time, message: `Error: ${message}` }]);
       setError(message);
       setIsGenerating(false);
     }
@@ -119,17 +120,23 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       </div>
 
       {error && (
-        <p
+        <div
           role="alert"
+          className="image-generator-error"
           style={{
             fontSize: '12px',
             color: 'var(--color-danger)',
             margin: '0 0 8px',
-            lineHeight: 1.4
+            lineHeight: 1.45,
+            padding: '10px 12px',
+            borderRadius: '8px',
+            border: '1px solid color-mix(in srgb, var(--color-danger) 35%, transparent)',
+            background: 'color-mix(in srgb, var(--color-danger) 8%, transparent)'
           }}
         >
+          <strong style={{ display: 'block', marginBottom: '4px' }}>Image generation failed</strong>
           {error}
-        </p>
+        </div>
       )}
 
       <div>

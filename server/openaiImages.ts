@@ -4,6 +4,7 @@
  */
 
 import { diagnoseOpenAIKey, normalizeApiKey, openAIKeyErrorMessage } from './openaiEnv.js';
+import { resolveImageModel } from './openaiModels.js';
 
 export interface OpenAIImageGenerateBody {
   prompt: string;
@@ -27,6 +28,33 @@ const STYLE_PREFIX: Record<string, string> = {
   gradient:
     'Abstract neon gradient hero graphic, geometric nodes, safety green and deep obsidian, modern seeo.ai aesthetic: ',
 };
+
+/** Map OpenAI / proxy errors to actionable copy for the UI. */
+export function formatOpenAIImageError(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (
+    lower.includes('billing hard limit') ||
+    lower.includes('insufficient_quota') ||
+    (lower.includes('billing') && lower.includes('limit'))
+  ) {
+    return (
+      'OpenAI billing limit reached. In platform.openai.com → Settings → Billing, ' +
+      'raise or remove your hard usage limit, then try again.'
+    );
+  }
+  if (lower.includes('content policy') || lower.includes('safety system')) {
+    return `Image blocked by OpenAI content policy. Revise the prompt and try again. (${raw})`;
+  }
+  if (lower.includes('rate limit') || lower.includes('rate_limit')) {
+    return 'OpenAI rate limit hit. Wait a minute and try again.';
+  }
+  if (lower.includes('invalid model') || lower.includes('model_not_found')) {
+    return (
+      `Invalid image model. Set OPENAI_IMAGE_MODEL to a supported slug (default gpt-image-1). (${raw})`
+    );
+  }
+  return raw;
+}
 
 export function buildImagePrompt(
   corePrompt: string,
@@ -56,10 +84,10 @@ function readJsonBody(req: import('node:http').IncomingMessage): Promise<unknown
   });
 }
 
-export async function handleOpenAIImageGenerate(
-  req: import('node:http').IncomingMessage,
+export async function generateOpenAIImageFromBody(
+  parsed: OpenAIImageGenerateBody,
   apiKey: string,
-  model: string
+  modelEnv?: string
 ): Promise<{ status: number; body: OpenAIImageGenerateResult | { error: string } }> {
   const key = normalizeApiKey(apiKey);
   if (!key) {
@@ -75,17 +103,11 @@ export async function handleOpenAIImageGenerate(
     };
   }
 
-  let parsed: OpenAIImageGenerateBody;
-  try {
-    const raw = (await readJsonBody(req)) as OpenAIImageGenerateBody;
-    if (!raw?.prompt || typeof raw.prompt !== 'string') {
-      return { status: 400, body: { error: 'Missing prompt' } };
-    }
-    parsed = raw;
-  } catch {
-    return { status: 400, body: { error: 'Invalid request body' } };
+  if (!parsed?.prompt || typeof parsed.prompt !== 'string' || !parsed.prompt.trim()) {
+    return { status: 400, body: { error: 'Missing prompt' } };
   }
 
+  const model = resolveImageModel(modelEnv);
   const fullPrompt = buildImagePrompt(
     parsed.prompt,
     parsed.style ?? 'editorial',
@@ -107,17 +129,25 @@ export async function handleOpenAIImageGenerate(
     }),
   });
 
-  const payload = (await response.json()) as {
+  let payload: {
     error?: { message?: string };
     data?: Array<{ b64_json?: string; url?: string; revised_prompt?: string }>;
   };
+  try {
+    payload = (await response.json()) as typeof payload;
+  } catch {
+    return {
+      status: 502,
+      body: { error: 'Invalid response from OpenAI Images API' },
+    };
+  }
 
   if (!response.ok) {
+    const raw =
+      payload.error?.message ?? `OpenAI Images API error (${response.status})`;
     return {
       status: response.status,
-      body: {
-        error: payload.error?.message ?? `OpenAI Images API error (${response.status})`,
-      },
+      body: { error: formatOpenAIImageError(raw) },
     };
   }
 
@@ -131,7 +161,12 @@ export async function handleOpenAIImageGenerate(
   }
 
   if (!imageDataUrl) {
-    return { status: 502, body: { error: 'No image data returned from OpenAI' } };
+    return {
+      status: 502,
+      body: {
+        error: formatOpenAIImageError('No image data returned from OpenAI'),
+      },
+    };
   }
 
   return {
@@ -144,9 +179,25 @@ export async function handleOpenAIImageGenerate(
   };
 }
 
+export async function handleOpenAIImageGenerate(
+  req: import('node:http').IncomingMessage,
+  apiKey: string,
+  modelEnv?: string
+): Promise<{ status: number; body: OpenAIImageGenerateResult | { error: string } }> {
+  let parsed: OpenAIImageGenerateBody;
+  try {
+    const raw = (await readJsonBody(req)) as OpenAIImageGenerateBody;
+    parsed = raw;
+  } catch {
+    return { status: 400, body: { error: 'Invalid request body' } };
+  }
+
+  return generateOpenAIImageFromBody(parsed, apiKey, modelEnv);
+}
+
 export function createOpenAIImageMiddleware(
   getApiKey: () => string | undefined,
-  getModel: () => string
+  getModelEnv: () => string | undefined
 ): (
   req: import('node:http').IncomingMessage,
   res: import('node:http').ServerResponse,
@@ -164,7 +215,7 @@ export function createOpenAIImageMiddleware(
         const result = await handleOpenAIImageGenerate(
           req,
           getApiKey() ?? '',
-          getModel()
+          getModelEnv()
         );
         res.statusCode = result.status;
         res.setHeader('Content-Type', 'application/json');
