@@ -22,5 +22,6 @@ export interface GroundedDocumentsState {
   savePastedContext: () => Promise<void>;
   deleteDocument: (documentId: Id<'groundedDocuments'>) => Promise<void>;
   uploadError: string | null;
+  uploadNotice: string | null;
   isUploading: boolean;
 }

@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { Upload, FileText, Trash2, Loader2 } from 'lucide-react';
 import type { Id } from '../../convex/_generated/dataModel';
+import { getConvexDisplayHost } from '../convex/client';
 import type { GroundedDocumentRow } from '../hooks/groundedDocumentsTypes';
 
 interface GroundedDataPanelProps {
@@ -15,6 +16,7 @@ interface GroundedDataPanelProps {
   onSavePastedContext: () => Promise<void>;
   onDeleteDocument: (documentId: Id<'groundedDocuments'>) => Promise<void>;
   uploadError: string | null;
+  uploadNotice: string | null;
   isUploading: boolean;
 }
 
@@ -30,10 +32,13 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
   onSavePastedContext,
   onDeleteDocument,
   uploadError,
+  uploadNotice,
   isUploading,
 }) => {
   const [isDndActive, setIsDndActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputId = useId();
+  const convexHost = getConvexDisplayHost();
 
   const handleFiles = (files: FileList | null) => {
     if (!files?.length) return;
@@ -64,20 +69,26 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
           <FileText size={18} color="var(--color-primary)" /> Grounded Context & Files
         </h3>
         <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-          {convexReady ? 'Convex-backed' : 'Convex not configured'}
+          {convexReady ?
+            convexHost ? `Convex · ${convexHost}`
+            : 'Convex-backed'
+          : 'Session-only (no Convex URL)'}
         </span>
       </div>
 
       {!convexReady && (
         <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-          Convex is not configured, so uploads are stored locally for this session only. Set <code>VITE_CONVEX_URL</code> and run <code>npx convex dev</code> to persist uploads.
+          Uploads work in this browser tab only until you set <code>VITE_CONVEX_URL</code> to your{' '}
+          <code>*.convex.cloud</code> deployment and <strong>redeploy</strong> on Vercel (env vars are baked in at
+          build time).
         </p>
       )}
 
       <input
+        id={fileInputId}
         ref={fileInputRef}
         type="file"
-        accept=".txt,.csv,.pdf,text/plain,text/csv,application/pdf"
+        accept=".txt,.csv,text/plain,text/csv,application/csv,text/comma-separated-values"
         multiple
         style={{ display: 'none' }}
         aria-label="Upload grounded context files"
@@ -124,15 +135,53 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
         >
           Upload file
         </button>
+        <label
+          htmlFor={fileInputId}
+          className="btn-secondary"
+          style={{ fontSize: '12px', cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.6 : 1 }}
+          aria-disabled={isUploading}
+        >
+          Choose file…
+        </label>
         <span style={{ fontSize: '11px', color: 'var(--text-muted)', alignSelf: 'center' }}>
-          Tip: PDF selection is allowed but will show a warning until extraction is enabled.
+          .txt and .csv only (max 512KB)
         </span>
       </div>
 
       {uploadError && (
-        <p style={{ fontSize: '12px', color: '#f87171', marginTop: '8px' }} role="alert">
+        <div
+          role="alert"
+          style={{
+            marginTop: '10px',
+            padding: '10px 12px',
+            borderRadius: '8px',
+            border: '1px solid rgba(248, 113, 113, 0.45)',
+            background: 'rgba(127, 29, 29, 0.35)',
+            color: '#fecaca',
+            fontSize: '12px',
+            lineHeight: 1.45,
+          }}
+        >
+          <strong style={{ display: 'block', marginBottom: '4px' }}>Upload failed</strong>
           {uploadError}
-        </p>
+        </div>
+      )}
+
+      {uploadNotice && !uploadError && (
+        <div
+          role="status"
+          style={{
+            marginTop: '10px',
+            padding: '10px 12px',
+            borderRadius: '8px',
+            border: '1px solid rgba(16, 185, 129, 0.35)',
+            background: 'rgba(6, 78, 59, 0.25)',
+            color: '#a7f3d0',
+            fontSize: '12px',
+          }}
+        >
+          {uploadNotice}
+        </div>
       )}
 
       <div style={{ marginTop: '16px' }}>

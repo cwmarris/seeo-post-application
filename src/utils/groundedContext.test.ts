@@ -45,6 +45,7 @@ describe('isAllowedGroundedMime', () => {
     expect(isAllowedGroundedMime('text/csv', 'log.csv')).toBe(true);
     expect(isAllowedGroundedMime('text/plain', 'notes.txt')).toBe(true);
     expect(isAllowedGroundedMime('', 'audit.csv')).toBe(true);
+    expect(isAllowedGroundedMime('application/octet-stream', 'notes.txt')).toBe(true);
   });
 
   it('rejects pdf and unknown types', () => {

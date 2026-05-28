@@ -18,6 +18,7 @@ function renderPanel(overrides?: Partial<React.ComponentProps<typeof GroundedDat
     onSavePastedContext: vi.fn(async () => undefined),
     onDeleteDocument: vi.fn(async () => undefined),
     uploadError: null,
+    uploadNotice: null,
     isUploading: false,
     ...overrides,
   };

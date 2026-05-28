@@ -9,6 +9,7 @@ export function useGroundedDocumentsLocal() {
   const [documents, setDocuments] = useState<GroundedDocumentRow[]>([]);
   const [selectedDocIds, setSelectedDocIds] = useState<Id<'groundedDocuments'>[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const selectedDocs = useMemo(() => {
@@ -29,6 +30,7 @@ export function useGroundedDocumentsLocal() {
 
   const uploadFiles = useCallback(async (files: FileList | File[]) => {
     setUploadError(null);
+    setUploadNotice(null);
     setIsUploading(true);
     try {
       for (const file of Array.from(files)) {
@@ -44,7 +46,11 @@ export function useGroundedDocumentsLocal() {
         setDocuments((prev) => [doc, ...prev]);
         setSelectedDocIds((prev) => [...prev, localId]);
       }
+      setUploadNotice('File added for this browser session (Convex not configured).');
     } catch (err) {
+      if (import.meta.env.DEV) {
+        console.error('[grounded] local upload failed', err);
+      }
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setIsUploading(false);
@@ -56,6 +62,7 @@ export function useGroundedDocumentsLocal() {
     if (!text) return;
 
     setUploadError(null);
+    setUploadNotice(null);
     setIsUploading(true);
     try {
       const localId = `local-${crypto.randomUUID()}` as Id<'groundedDocuments'>;
@@ -68,6 +75,7 @@ export function useGroundedDocumentsLocal() {
       };
       setDocuments((prev) => [doc, ...prev]);
       setSelectedDocIds((prev) => [...prev, localId]);
+      setUploadNotice('Pasted context saved for this browser session.');
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Save failed');
     } finally {
@@ -93,6 +101,7 @@ export function useGroundedDocumentsLocal() {
     savePastedContext,
     deleteDocument,
     uploadError,
+    uploadNotice,
     isUploading,
   };
 }

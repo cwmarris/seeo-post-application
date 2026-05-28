@@ -10,7 +10,7 @@ describe('GroundedDocumentsBridge (local mode)', () => {
 
     render(<GroundedDocumentsBridge onEffectiveGroundedTextChange={onEffectiveGroundedTextChange} />);
 
-    expect(screen.getByText(/convex is not configured/i)).toBeInTheDocument();
+    expect(screen.getByText(/session-only \(no convex url\)/i)).toBeInTheDocument();
 
     const fileInput = screen.getByLabelText(/upload grounded context files/i);
     const file = new File(['hello world'], 'notes.txt', { type: 'text/plain' });

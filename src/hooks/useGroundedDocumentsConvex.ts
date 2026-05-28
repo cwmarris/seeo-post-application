@@ -8,9 +8,21 @@ import {
   type GroundedDocSelection,
 } from '../utils/groundedContext';
 import { getGroundedSessionId } from '../utils/groundedSession';
+import type { GroundedDocumentRow } from './groundedDocumentsTypes';
+
+function formatUploadError(err: unknown): string {
+  if (err instanceof Error) {
+    const msg = err.message;
+    if (/fetch|network|websocket|failed to/i.test(msg)) {
+      return `${msg} — Check VITE_CONVEX_URL on Vercel matches your Convex cloud deployment and redeploy after changing env vars.`;
+    }
+    return msg;
+  }
+  return 'Upload failed';
+}
 
 export function useGroundedDocumentsConvex() {
-  const sessionId = getGroundedSessionId();
+  const [sessionId] = useState(() => getGroundedSessionId());
 
   const documents = useQuery(api.groundedDocuments.listBySession, { sessionId });
   const createFromText = useMutation(api.groundedDocuments.createFromText);
@@ -19,11 +31,20 @@ export function useGroundedDocumentsConvex() {
   const [selectedDocIds, setSelectedDocIds] = useState<Id<'groundedDocuments'>[]>([]);
   const [manualGroundedText, setManualGroundedText] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [optimisticDocs, setOptimisticDocs] = useState<GroundedDocumentRow[]>([]);
+
+  const serverDocuments = documents ?? [];
+
+  const mergedDocuments = useMemo(() => {
+    const serverIds = new Set(serverDocuments.map((doc) => doc._id));
+    const pending = optimisticDocs.filter((doc) => !serverIds.has(doc._id));
+    return [...pending, ...serverDocuments];
+  }, [optimisticDocs, serverDocuments]);
 
   const selectedDocs: GroundedDocSelection[] = useMemo(() => {
-    if (!documents) return [];
-    return documents
+    return mergedDocuments
       .filter((doc) => selectedDocIds.includes(doc._id))
       .map((doc) => ({
         id: doc._id,
@@ -31,7 +52,7 @@ export function useGroundedDocumentsConvex() {
         mimeType: doc.mimeType,
         textContent: doc.textContent,
       }));
-  }, [documents, selectedDocIds]);
+  }, [mergedDocuments, selectedDocIds]);
 
   const effectiveGroundedText = useMemo(
     () => buildGroundedTextFromSelection(selectedDocs, manualGroundedText),
@@ -41,6 +62,7 @@ export function useGroundedDocumentsConvex() {
   const uploadFiles = useCallback(
     async (files: FileList | File[]) => {
       setUploadError(null);
+      setUploadNotice(null);
       setIsUploading(true);
 
       try {
@@ -52,10 +74,24 @@ export function useGroundedDocumentsConvex() {
             mimeType: file.type || 'text/plain',
             textContent,
           });
+          setOptimisticDocs((prev) => [
+            {
+              _id: docId,
+              name: file.name,
+              mimeType: file.type || 'text/plain',
+              textContent,
+              createdAt: Date.now(),
+            },
+            ...prev,
+          ]);
           setSelectedDocIds((prev) => [...prev, docId]);
         }
+        setUploadNotice('File saved to grounded context.');
       } catch (err) {
-        setUploadError(err instanceof Error ? err.message : 'Upload failed');
+        if (import.meta.env.DEV) {
+          console.error('[grounded] upload failed', err);
+        }
+        setUploadError(formatUploadError(err));
       } finally {
         setIsUploading(false);
       }
@@ -68,6 +104,7 @@ export function useGroundedDocumentsConvex() {
     if (!text) return;
 
     setUploadError(null);
+    setUploadNotice(null);
     setIsUploading(true);
     try {
       const docId = await createFromText({
@@ -76,9 +113,23 @@ export function useGroundedDocumentsConvex() {
         mimeType: 'text/plain',
         textContent: text,
       });
+      setOptimisticDocs((prev) => [
+        {
+          _id: docId,
+          name: `pasted-context-${new Date().toISOString().slice(0, 10)}.txt`,
+          mimeType: 'text/plain',
+          textContent: text,
+          createdAt: Date.now(),
+        },
+        ...prev,
+      ]);
       setSelectedDocIds((prev) => [...prev, docId]);
+      setUploadNotice('Pasted context saved as a document.');
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Save failed');
+      if (import.meta.env.DEV) {
+        console.error('[grounded] save paste failed', err);
+      }
+      setUploadError(formatUploadError(err));
     } finally {
       setIsUploading(false);
     }
@@ -87,6 +138,7 @@ export function useGroundedDocumentsConvex() {
   const deleteDocument = useCallback(
     async (documentId: Id<'groundedDocuments'>) => {
       await removeDocument({ sessionId, documentId });
+      setOptimisticDocs((prev) => prev.filter((doc) => doc._id !== documentId));
       setSelectedDocIds((prev) => prev.filter((id) => id !== documentId));
     },
     [removeDocument, sessionId]
@@ -95,7 +147,7 @@ export function useGroundedDocumentsConvex() {
   return {
     convexReady: true,
     sessionId,
-    documents: documents ?? [],
+    documents: mergedDocuments,
     isLoading: documents === undefined,
     selectedDocIds,
     setSelectedDocIds,
@@ -107,6 +159,7 @@ export function useGroundedDocumentsConvex() {
     savePastedContext,
     deleteDocument,
     uploadError,
+    uploadNotice,
     isUploading,
   };
 }

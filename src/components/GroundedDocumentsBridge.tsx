@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { isConvexConfigured } from '../convex/client';
+import { useConvexProviderReady } from '../convex/convexAvailability';
 import { useGroundedDocumentsConvex } from '../hooks/useGroundedDocumentsConvex';
 import { useGroundedDocumentsLocal } from '../hooks/useGroundedDocumentsLocal';
 import type { GroundedDocumentsState } from '../hooks/groundedDocumentsTypes';
@@ -33,6 +34,7 @@ function GroundedDocumentsPanelInner({
       onSavePastedContext={grounded.savePastedContext}
       onDeleteDocument={grounded.deleteDocument}
       uploadError={grounded.uploadError}
+      uploadNotice={grounded.uploadNotice}
       isUploading={grounded.isUploading}
     />
   );
@@ -58,8 +60,14 @@ function GroundedDocumentsLocal({ onEffectiveGroundedTextChange }: GroundedDocum
   );
 }
 
+function useGroundedDocumentsBackend(): 'convex' | 'local' {
+  const providerReady = useConvexProviderReady();
+  return isConvexConfigured() && providerReady ? 'convex' : 'local';
+}
+
 export function GroundedDocumentsBridge({ onEffectiveGroundedTextChange }: GroundedDocumentsBridgeProps) {
-  if (isConvexConfigured()) {
+  const backend = useGroundedDocumentsBackend();
+  if (backend === 'convex') {
     return <GroundedDocumentsConvex onEffectiveGroundedTextChange={onEffectiveGroundedTextChange} />;
   }
   return <GroundedDocumentsLocal onEffectiveGroundedTextChange={onEffectiveGroundedTextChange} />;

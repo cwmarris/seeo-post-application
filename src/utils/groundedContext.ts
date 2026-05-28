@@ -12,16 +12,18 @@ export const ALLOWED_GROUNDED_MIME_TYPES = new Set([
   'text/csv',
   'application/csv',
   'text/comma-separated-values',
+  'application/vnd.ms-excel',
 ]);
 
 export const ALLOWED_GROUNDED_EXTENSIONS = new Set(['.txt', '.csv']);
 
 export function isAllowedGroundedMime(mimeType: string, fileName: string): boolean {
-  const normalized = mimeType.trim().toLowerCase();
-  if (ALLOWED_GROUNDED_MIME_TYPES.has(normalized)) return true;
-
   const ext = fileName.includes('.') ? fileName.slice(fileName.lastIndexOf('.')).toLowerCase() : '';
-  return ALLOWED_GROUNDED_EXTENSIONS.has(ext);
+  if (ALLOWED_GROUNDED_EXTENSIONS.has(ext)) return true;
+
+  const normalized = mimeType.trim().toLowerCase();
+  if (!normalized || normalized === 'application/octet-stream') return false;
+  return ALLOWED_GROUNDED_MIME_TYPES.has(normalized);
 }
 
 export function buildGroundedTextFromSelection(
