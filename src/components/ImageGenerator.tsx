@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Image, RefreshCw } from 'lucide-react';
+import { useAppHealthModels } from '../hooks/useAppHealthModels';
 import { generateVisualAsset } from '../utils/openaiImages';
 
 interface ImageGeneratorProps {
@@ -33,6 +34,8 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   const [logs, setLogs] = useState<GuidanceLog[]>([]);
   const [error, setError] = useState<string | null>(null);
   const logTimeoutsRef = useRef<number[]>([]);
+  const { models } = useAppHealthModels();
+  const imageModel = models.imageModel;
 
   const suggestedPrompt = (() => {
     if (postContent) {
@@ -71,7 +74,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     clearScheduledLogs();
 
     if (!isRedo) {
-      addLog('Connecting to OpenAI Images API (gpt-image-2)...', 100);
+      addLog(`Connecting to OpenAI Images API (${imageModel})...`, 100);
       addLog(`Applying style: [${activeStyle.toUpperCase()}]`, 400);
       addLog('Matching seeo.ai brand palette (safety green / obsidian)...', 800);
     } else {
@@ -174,7 +177,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
             <div className="circular-spinner"></div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
               <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>Generating Asset...</span>
-              <span style={{ fontSize: '11px', color: 'var(--color-accent)' }}>OpenAI image model</span>
+              <span style={{ fontSize: '11px', color: 'var(--color-accent)' }}>{imageModel}</span>
             </div>
             <div className="guidance-logs">
               {logs.map((log, idx) => (
