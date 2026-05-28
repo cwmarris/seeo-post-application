@@ -20,6 +20,7 @@ export interface ImproveDraftApiParams {
   topic?: string;
   draft?: string;
   generationInstructions?: string;
+  revisionGuidance?: string;
   targetLength?: DraftTargetLength;
   rlContext: DraftRLContext;
 }

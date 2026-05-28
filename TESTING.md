@@ -11,7 +11,7 @@
 2. **Local environment** — copy `.env.example` → `.env` and set:
    ```bash
    OPENAI_API_KEY=sk-...          # required for OpenAI drafts + images in dev
-   OPENAI_DRAFT_MODEL=gpt-5.5     # flagship draft/improve model (API slug)
+   OPENAI_DRAFT_MODEL=gpt-5.5     # was gpt-4o-mini — use gpt-5.5 for flagship draft/improve
    # Optional: OPENAI_IMAGE_MODEL, OPENAI_GROUNDED_IMAGE_MODEL
    VITE_CONVEX_URL=https://...    # grounded context (Convex dashboard)
    ```
@@ -27,16 +27,16 @@
 
 4. **Manual draft QA** (see loop below) on `http://127.0.0.1:5173` with header badge showing OpenAI configured.
 
-5. **Production (Vercel)**
-   - Merge to `main`, then from the project root:
-     ```bash
-     vercel deploy --prod
-     ```
-   - **Vercel → Settings → Environment Variables** (Production):
+5. **Production (Vercel)** — deploy from latest `main` (commit `8a3706a` or newer):
+   ```bash
+   git pull origin main
+   vercel deploy --prod
+   ```
+   - **Vercel → Settings → Environment Variables** (Production): update then redeploy if you change them:
      | Variable | Notes |
      |----------|--------|
      | `OPENAI_API_KEY` | Server-only; never `VITE_` prefix |
-     | `OPENAI_DRAFT_MODEL` | `gpt-5.5` (or allowlisted slug) |
+     | `OPENAI_DRAFT_MODEL` | Set to `gpt-5.5` (replace legacy `gpt-4o-mini`) |
      | `VITE_CONVEX_URL` | Production Convex deployment URL |
    - Leave `VITE_DRAFT_API_BASE_URL` / `VITE_IMAGE_API_BASE_URL` **unset** on Vercel so the app uses same-origin `/api/generate/draft` and `/api/openai/images`.
    - After deploy: **hard refresh** the browser (Cmd+Shift+R) so the new JS bundle loads.
@@ -53,16 +53,23 @@ Use this when tuning copy quality without changing code:
 4. Choose **Target length** (Short / Medium / Long) — this is sent to the API and embedded in the system + user prompts.
 5. Click **Generate Draft** — uses OpenAI when `/api/health` reports `openai.configured`, otherwise local templates.
 6. Edit the draft in the text area if needed.
-7. **Improve draft** — re-runs with the **same** generation instructions and target length; keeps the revision only if the autoresearch score improves (see `docs/AUTORESEARCH.md`).
-8. Optional: enable **Auto-improve** to run that loop when feedback tags change.
-9. Rate the draft and aspect feedback — updates RL banned words / weights for future generations.
+7. Fill **Revision guidance** (shown after a draft exists) — e.g. “Sharpen hook, cut para 2, stronger CTA.”
+8. **Improve draft** — uses revision guidance only (not generation instructions); keeps the revision only if the autoresearch score improves (see `docs/AUTORESEARCH.md`).
+9. Optional: enable **Auto-improve** to run that loop when feedback tags change.
+10. Rate the draft and aspect feedback — updates RL banned words / weights for future generations.
 
-**How prompt feedback works in the UI today**
+**How prompt feedback works in the UI**
 
-- **Generation instructions** is a single text field reused for both **Generate** and **Improve draft** (not a separate “feedback only” field).
-- On **Improve**, instructions are appended to the user prompt as “honor these instructions” alongside the current draft and any **aspect feedback** tags you selected when rating.
+- **Generation instructions** — initial **Generate Draft** and **Regenerate** only.
+- **Revision guidance** — appears once a draft exists; sent only to **Improve draft** / auto-improve as `revisionGuidance` (prominent block in the improve user prompt).
+- **Aspect feedback** tags from rating are included on improve when selected.
 - **Target length** applies to both generate and improve paths.
-- There is no separate chat thread; each click is one API round-trip.
+- Each click is one API round-trip (no chat thread).
+
+**Verify production after deploy**
+
+- Hard refresh (Cmd+Shift+R); header badge should show OpenAI configured when `OPENAI_API_KEY` is set on Vercel.
+- Sidebar footer: **AI Telemetry** reflects `/api/health`; **RL LEARNING INDEX** is mean STEEP weight from `seeo_rl_state`; experiment count from autoresearch log.
 
 ---
 
@@ -75,7 +82,7 @@ Use this when tuning copy quality without changing code:
 
 **What unit tests cover**
 
-- Prompt injection: `generationInstructions` and `targetLength` in system/user messages.
+- Prompt injection: `generationInstructions` (generate), `revisionGuidance` (improve only), and `targetLength` in system/user messages.
 - Mock `fetch` to OpenAI: request body includes instructions and length bands.
 - Length bands: short (550–850), medium (850–1,200), long (1,200–1,600) in prompts.
 - Banned phrases listed in system prompt + RL list; local output run through `filterBannedPhrases`.

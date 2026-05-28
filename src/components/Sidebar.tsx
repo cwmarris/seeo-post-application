@@ -1,13 +1,14 @@
 import React from 'react';
 import { LayoutDashboard, PenTool, Calendar, TrendingUp, Sparkles } from 'lucide-react';
+import type { SidebarTelemetry } from '../utils/sidebarTelemetry';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  rlScore: number;
+  telemetry: SidebarTelemetry;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, rlScore }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, telemetry }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard & Feed', icon: LayoutDashboard },
     { id: 'composer', label: 'Post Composer', icon: PenTool },
@@ -42,13 +43,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, rlSco
         })}
       </nav>
 
-      {/* Sidebar Footer with RL Status */}
+      {/* Sidebar Footer — live telemetry from RL state, experiments, health, posts */}
       <div className="sidebar-footer">
         <div className="user-status">
-          <div className="status-dot"></div>
+          <div
+            className="status-dot"
+            style={{
+              background: telemetry.openaiConfigured ? 'var(--color-primary)' : 'var(--color-warning)',
+            }}
+          />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>AI Telemetry Sync</span>
-            <span style={{ fontSize: '12px', fontWeight: 600 }}>Active & Diligent</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>AI Telemetry</span>
+            <span style={{ fontSize: '12px', fontWeight: 600 }}>{telemetry.openaiStatusLabel}</span>
           </div>
         </div>
 
@@ -58,8 +64,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, rlSco
             <span>RL LEARNING INDEX</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontSize: '20px', fontFamily: 'var(--font-display)', fontWeight: 800 }}>{rlScore}%</span>
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+2.4% reward</span>
+            <span style={{ fontSize: '20px', fontFamily: 'var(--font-display)', fontWeight: 800 }}>{telemetry.rlLearningIndex}%</span>
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{telemetry.rewardHint}</span>
+          </div>
+          <div style={{ marginTop: '8px', fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+            {telemetry.experimentCount} improve experiment{telemetry.experimentCount === 1 ? '' : 's'} ·{' '}
+            {telemetry.scheduledCount} scheduled · {telemetry.publishedCount} published
           </div>
         </div>
       </div>

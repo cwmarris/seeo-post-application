@@ -45,18 +45,34 @@ describe('buildDraftPromptMessages', () => {
     expect(prompts.user).toContain('550–850');
   });
 
-  it('includes improve-mode custom instructions', () => {
+  it('injects revision guidance prominently in improve mode', () => {
     const prompts = buildDraftPromptMessages({
       ...baseBody,
       mode: 'improve',
       draft: 'Draft text here.',
-      generationInstructions: 'Tighten the opening hook.',
+      revisionGuidance: 'Tighten the opening hook and shorten paragraph two.',
       targetLength: 'medium',
     });
 
-    expect(prompts.user).toContain('honor these instructions');
+    expect(prompts.user).toContain('REVISION GUIDANCE');
     expect(prompts.user).toContain('Tighten the opening hook');
+    expect(prompts.user).not.toContain('honor these instructions');
     expect(prompts.system).toContain('850–1,200');
+  });
+
+  it('keeps original generation brief secondary on improve when both are set', () => {
+    const prompts = buildDraftPromptMessages({
+      ...baseBody,
+      mode: 'improve',
+      draft: 'Draft text here.',
+      generationInstructions: 'Mention Auckland pilot.',
+      revisionGuidance: 'Sharpen the CTA.',
+      targetLength: 'medium',
+    });
+
+    expect(prompts.user).toContain('Sharpen the CTA');
+    expect(prompts.user).toContain('Original generation brief');
+    expect(prompts.user).toContain('Auckland pilot');
   });
 
   it('enforces LinkedIn brevity rules in system prompt', () => {
@@ -102,13 +118,13 @@ describe('handleGenerateDraftBody', () => {
     vi.restoreAllMocks();
   });
 
-  it('sends improve-mode generation instructions in the user message', async () => {
+  it('sends improve-mode revision guidance in the user message (not generation brief)', async () => {
     await handleGenerateDraftBody(
       {
         ...baseBody,
         mode: 'improve',
         draft: 'Original draft text.',
-        generationInstructions: 'Sharpen the CTA and cut the second paragraph.',
+        revisionGuidance: 'Sharpen the CTA and cut the second paragraph.',
         targetLength: 'long',
       },
       'sk-test-key',
@@ -120,7 +136,9 @@ describe('handleGenerateDraftBody', () => {
     const payload = JSON.parse(init.body as string) as {
       messages: Array<{ role: string; content: string }>;
     };
+    expect(payload.messages[1]?.content).toContain('REVISION GUIDANCE');
     expect(payload.messages[1]?.content).toContain('Sharpen the CTA');
+    expect(payload.messages[1]?.content).not.toContain('Author generation instructions');
     expect(payload.messages[1]?.content).toContain('1,200–1,600');
     expect(payload.messages[0]?.content).toContain('1,200–1,600');
   });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
 import { PostComposerView } from './components/PostComposerView';
@@ -7,6 +7,8 @@ import { RLOptimizerView } from './components/RLOptimizerView';
 import { HealthStatusBadge } from './components/HealthStatusBadge';
 import { INITIAL_POSTS, type LinkedInPost } from './utils/mockData';
 import { getRLState, type RLState } from './utils/rlEngine';
+import { buildSidebarTelemetry, computeRlLearningIndex } from './utils/sidebarTelemetry';
+import { useOpenAIHealth } from './hooks/useOpenAIHealth';
 import './styles/theme.css';
 import './styles/App.css';
 import './styles/components.css';
@@ -15,6 +17,23 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [posts, setPosts] = useState<LinkedInPost[]>(INITIAL_POSTS);
   const [rlState, setRlState] = useState<RLState>(getRLState());
+  const [telemetryTick, setTelemetryTick] = useState(0);
+  const { openai: openaiHealth, loading: openaiHealthLoading } = useOpenAIHealth();
+  const scheduledCount = posts.filter((p) => p.status === 'scheduled').length;
+  const publishedCount = posts.filter((p) => p.status === 'published').length;
+  const rlLearningIndex = computeRlLearningIndex(rlState);
+
+  const sidebarTelemetry = useMemo(
+    () =>
+      buildSidebarTelemetry({
+        rlState,
+        openaiConfigured: openaiHealth?.configured ?? false,
+        openaiLoading: openaiHealthLoading,
+        scheduledCount,
+        publishedCount,
+      }),
+    [rlState, openaiHealth?.configured, openaiHealthLoading, scheduledCount, publishedCount, telemetryTick]
+  );
 
   const handleAddPost = (newPost: LinkedInPost) => {
     setPosts([newPost, ...posts]);
@@ -44,6 +63,7 @@ export const App: React.FC = () => {
 
   const updateRlState = (newState: RLState) => {
     setRlState(newState);
+    setTelemetryTick((t) => t + 1);
   };
 
   // Dynamic Page Header Metadata
@@ -85,7 +105,7 @@ export const App: React.FC = () => {
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        rlScore={rlState.steepWeights.Technological} // Use Technology factor as a live dynamic index
+        telemetry={sidebarTelemetry}
       />
 
       {/* 2. Main Content Area */}
@@ -107,7 +127,7 @@ export const App: React.FC = () => {
         {activeTab === 'dashboard' && (
           <DashboardView
             posts={posts}
-            rlScore={rlState.steepWeights.Technological}
+            rlScore={rlLearningIndex}
             averageRating={rlState.averageRating}
             totalRated={rlState.postCountRated}
             handlePostNow={handlePostNow}
@@ -121,6 +141,7 @@ export const App: React.FC = () => {
             onAddPost={handleAddPost}
             rlState={rlState}
             updateRlState={updateRlState}
+            onTelemetryRefresh={() => setTelemetryTick((t) => t + 1)}
           />
         )}
 

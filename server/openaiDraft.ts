@@ -3,7 +3,7 @@
  * Dev: Vite middleware at /api/generate/draft. Prod: Vercel serverless route.
  */
 
-import type { IncomingMessage } from 'node:http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { diagnoseOpenAIKey, normalizeApiKey, openAIKeyErrorMessage } from './openaiEnv.js';
 import { getAuthorStyleGuide } from '../src/utils/authorStyles.js';
 import {
@@ -33,8 +33,10 @@ export interface GenerateDraftBody {
   groundedText?: string;
   topic?: string;
   draft?: string;
-  /** User-authored angle, CTA, facts, or constraints for this draft. */
+  /** User-authored angle, CTA, facts, or constraints for initial generation. */
   generationInstructions?: string;
+  /** Improve-only: how to revise the existing draft (separate from generation brief). */
+  revisionGuidance?: string;
   targetLength?: DraftTargetLength;
   /** Optional; only applied if on server allowlist (see openaiModels.ts). */
   model?: string;
@@ -127,11 +129,14 @@ function buildUserPrompt(body: GenerateDraftBody): string {
       body.rlContext.aspectFeedback?.length ?
         `Recent feedback tags: ${body.rlContext.aspectFeedback.join(', ')}.`
       : '';
-    const custom = body.generationInstructions?.trim()
-      ? `\nWhile improving, honor these instructions:\n${body.generationInstructions.trim()}\n`
+    const revision = body.revisionGuidance?.trim()
+      ? `\n\n*** REVISION GUIDANCE (highest priority for this improve pass) ***\n${body.revisionGuidance.trim()}\n*** END REVISION GUIDANCE ***\n`
+      : '';
+    const originalBrief = body.generationInstructions?.trim()
+      ? `\nOriginal generation brief (maintain voice and facts unless revision guidance overrides):\n${body.generationInstructions.trim()}\n`
       : '';
     return `Improve this LinkedIn draft. Keep the author's voice. Strengthen the hook (first 2 lines), cut filler, align with STEEP focus. ${lengthNote}
-${feedback}${custom}
+${feedback}${revision}${originalBrief}
 
 --- DRAFT ---
 ${body.draft}
@@ -250,7 +255,7 @@ export function createOpenAIDraftMiddleware(
   getEnvDraftModel: () => string | undefined
 ): (
   req: IncomingMessage,
-  res: import('node:http').ServerResponse,
+  res: ServerResponse,
   next: () => void
 ) => void {
   return (req, res, next) => {

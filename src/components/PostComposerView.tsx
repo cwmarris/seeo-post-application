@@ -20,18 +20,21 @@ interface PostComposerViewProps {
   onAddPost: (post: LinkedInPost) => void;
   rlState: RLState;
   updateRlState: (state: RLState) => void;
+  onTelemetryRefresh?: () => void;
 }
 
 export const PostComposerView: React.FC<PostComposerViewProps> = ({
   onAddPost,
   rlState,
-  updateRlState
+  updateRlState,
+  onTelemetryRefresh,
 }) => {
   // Post inputs
   const [selectedAuthor, setSelectedAuthor] = useState<string>('craig');
   const [selectedTone, setSelectedTone] = useState<string>('Thought Leader');
   const [targetLength, setTargetLength] = useState<'short' | 'medium' | 'long'>('medium');
   const [generationInstructions, setGenerationInstructions] = useState('');
+  const [revisionGuidance, setRevisionGuidance] = useState('');
   const [activeSteep, setActiveSteep] = useState<string[]>(['Social', 'Technological']);
   const [groundedText, setGroundedText] = useState('');
   
@@ -72,7 +75,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
           groundedText,
           rlState,
           aspectFeedback: selectedFeedback,
-          generationInstructions: generationInstructions.trim() || undefined,
+          revisionGuidance: revisionGuidance.trim() || undefined,
           targetLength,
         }
       : null,
@@ -84,7 +87,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
       groundedText,
       rlState,
       selectedFeedback,
-      generationInstructions,
+      revisionGuidance,
       targetLength,
     ]
   );
@@ -97,6 +100,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
       setPostDraft(content);
       setImproveMsg(message);
       setDraftMetric(scoreDraft(content, rlState, activeSteep));
+      onTelemetryRefresh?.();
     },
   });
 
@@ -164,6 +168,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
           `Kept (${result.source}): quality ${result.previousMetric} → ${result.metric}`
         : `Discarded (${result.source}): ${result.previousMetric} → ${result.metric} — original kept`
       );
+      onTelemetryRefresh?.();
     } catch (err) {
       setImproveMsg(err instanceof Error ? err.message : 'Improve failed');
     } finally {
@@ -316,7 +321,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
                 onChange={(e) => setGenerationInstructions(e.target.value)}
               />
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '6px 0 0', lineHeight: 1.4 }}>
-                Passed to OpenAI with author voice, STEEP lenses, and grounded context. Also used when improving a draft.
+                Used for <strong>Generate Draft</strong> and regenerate only — not the improve loop.
               </p>
             </div>
             <div className="composer-generate-row">
@@ -429,6 +434,26 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
                     </div>
                   </div>
                 )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label
+                    htmlFor="revision-guidance"
+                    style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' }}
+                  >
+                    Revision guidance
+                  </label>
+                  <textarea
+                    id="revision-guidance"
+                    className="text-input-grounded"
+                    placeholder="How to improve this draft: sharper hook, cut paragraph 2, stronger CTA…"
+                    style={{ minHeight: '64px', fontSize: '13px', lineHeight: 1.4 }}
+                    value={revisionGuidance}
+                    onChange={(e) => setRevisionGuidance(e.target.value)}
+                  />
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                    Sent only to <strong>Improve draft</strong> (and auto-improve), not initial generation.
+                  </p>
+                </div>
 
                 {/* Autoresearch-inspired improve loop */}
                 <div

@@ -31,6 +31,7 @@ export interface ImproveDraftInput {
   aspectFeedback?: string[];
   preferOpenAI?: boolean;
   generationInstructions?: string;
+  revisionGuidance?: string;
   targetLength?: DraftTargetLength;
 }
 
@@ -151,7 +152,7 @@ export async function runImproveDraftIteration(
     groundedText,
     rlState,
     aspectFeedback,
-    generationInstructions,
+    revisionGuidance,
     targetLength,
   } = input;
   const profile = FOUNDER_PROFILES.find((p) => p.id === authorId) ?? FOUNDER_PROFILES[0];
@@ -177,7 +178,7 @@ export async function runImproveDraftIteration(
         steepFocus,
         groundedText,
         draft,
-        generationInstructions,
+        revisionGuidance,
         targetLength,
         rlContext: {
           bannedWords: rlState.bannedWords,
