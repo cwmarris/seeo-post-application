@@ -9,7 +9,13 @@
  */
 
 export const DEFAULT_DRAFT_MODEL = 'gpt-5.5';
+export const DEFAULT_IMAGE_MODEL = 'gpt-image-1';
 export const DEFAULT_GROUNDED_IMAGE_MODEL = 'gpt-5.5';
+
+export function resolveImageModel(envModel: string | undefined): string {
+  const base = (envModel ?? DEFAULT_IMAGE_MODEL).trim() || DEFAULT_IMAGE_MODEL;
+  return base;
+}
 
 /** Models clients may request via API body (abuse prevention). Env override is not restricted. */
 export const ALLOWED_REQUEST_DRAFT_MODELS = [

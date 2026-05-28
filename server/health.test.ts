@@ -21,4 +21,27 @@ describe('buildHealthResponse', () => {
     expect(payload.openai.status).toBe('configured');
     expect(JSON.stringify(payload)).not.toContain('sk-live-secret');
   });
+
+  it('includes resolved model slugs without secrets', () => {
+    vi.stubEnv('OPENAI_DRAFT_MODEL', 'gpt-4.1');
+    vi.stubEnv('OPENAI_IMAGE_MODEL', 'gpt-image-1');
+    vi.stubEnv('OPENAI_GROUNDED_IMAGE_MODEL', 'gpt-4o');
+
+    const payload = buildHealthResponse(undefined, { localDev: false });
+    expect(payload.draftModel).toBe('gpt-4.1');
+    expect(payload.imageModel).toBe('gpt-image-1');
+    expect(payload.groundedImageModel).toBe('gpt-4o');
+    expect(JSON.stringify(payload)).not.toMatch(/sk-/);
+  });
+
+  it('defaults draft and image models when env unset', () => {
+    delete process.env.OPENAI_DRAFT_MODEL;
+    delete process.env.OPENAI_IMAGE_MODEL;
+    delete process.env.OPENAI_GROUNDED_IMAGE_MODEL;
+
+    const payload = buildHealthResponse(undefined, { localDev: false });
+    expect(payload.draftModel).toBe('gpt-5.5');
+    expect(payload.imageModel).toBe('gpt-image-1');
+    expect(payload.groundedImageModel).toBe('gpt-5.5');
+  });
 });

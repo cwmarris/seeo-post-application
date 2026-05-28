@@ -10,6 +10,10 @@ function mockFetchOk() {
       ok: true,
       timestamp: new Date().toISOString(),
       version: 'test',
+      draftModel: 'gpt-5.5',
+      imageModel: 'gpt-image-1',
+      groundedImageModel: 'gpt-5.5',
+      openai: { configured: true, message: 'OpenAI API key configured.' },
     }),
   });
 }
@@ -28,7 +32,10 @@ describe('HealthStatusBadge', () => {
     render(<HealthStatusBadge intervalMs={10_000} label="seeo Post Application" />);
 
     expect(await screen.findByText(/Connected/)).toBeInTheDocument();
-    expect(screen.getByTestId('health-status-badge')).toHaveAttribute('title', '');
+    expect(screen.getByTestId('health-status-badge')).toHaveAttribute(
+      'title',
+      'Draft model: gpt-5.5'
+    );
   });
 
   it('polls /api/health on an interval', async () => {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_DRAFT_MODEL,
+  DEFAULT_IMAGE_MODEL,
+  resolveImageModel,
   isAllowedRequestDraftModel,
   resolveDraftModel,
   resolveGroundedImageModel,
@@ -37,5 +39,11 @@ describe('openaiModels', () => {
     expect(resolveGroundedImageModel(undefined, undefined)).toBe('gpt-5.5');
     expect(resolveGroundedImageModel('gpt-4o', 'gpt-4.1', 'gpt-4o-mini')).toBe('gpt-4o-mini');
     expect(resolveGroundedImageModel('gpt-4o', 'gpt-4.1', 'evil-model')).toBe('gpt-4o');
+  });
+
+  it('defaults image model to gpt-image-1', () => {
+    expect(DEFAULT_IMAGE_MODEL).toBe('gpt-image-1');
+    expect(resolveImageModel(undefined)).toBe('gpt-image-1');
+    expect(resolveImageModel('dall-e-3')).toBe('dall-e-3');
   });
 });

@@ -29,7 +29,14 @@ export default defineConfig(({ mode }) => {
           const getEnvGroundedImageModel = () =>
             env.OPENAI_GROUNDED_IMAGE_MODEL || process.env.OPENAI_GROUNDED_IMAGE_MODEL
 
-          server.middlewares.use(createHealthMiddleware(getApiKey))
+          server.middlewares.use(
+            createHealthMiddleware({
+              getApiKey,
+              getDraftModelEnv: getEnvDraftModel,
+              getImageModelEnv: getImageModel,
+              getGroundedImageModelEnv: getEnvGroundedImageModel,
+            })
+          )
           server.middlewares.use(createOpenAIImageMiddleware(getApiKey, getImageModel))
           server.middlewares.use(
             createGroundedImageMiddleware(getApiKey, () =>

@@ -15,6 +15,7 @@ import { useOpenAIHealth } from '../hooks/useOpenAIHealth';
 import { GroundedDocumentsBridge } from './GroundedDocumentsBridge';
 import { ImageGenerator } from './ImageGenerator';
 import { LinkedInPreview } from './LinkedInPreview';
+import { ModelIndicator } from './ModelIndicator';
 
 interface PostComposerViewProps {
   onAddPost: (post: LinkedInPost) => void;
@@ -49,8 +50,9 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
   const [autoImprove, setAutoImprove] = useState<boolean>(() => isAutoImproveEnabled());
   const [draftMetric, setDraftMetric] = useState<number | null>(null);
   const [draftSource, setDraftSource] = useState<'openai' | 'local' | null>(null);
+  const [lastGeneratedModel, setLastGeneratedModel] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
-  const { openai: openaiHealth } = useOpenAIHealth();
+  const { openai: openaiHealth, loading: healthLoading } = useOpenAIHealth();
   const openaiConfigured = openaiHealth?.configured ?? isOpenAIDraftConfigured();
 
   // RL Rating States
@@ -119,6 +121,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
     setSelectedFeedback([]);
     setGenerateError(null);
     setDraftSource(null);
+    setLastGeneratedModel(null);
 
     void (async () => {
       try {
@@ -135,6 +138,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
         setReplacedPhrases(result.replacedPhrases);
         setWasFiltered(result.wasFiltered);
         setDraftSource(result.source);
+        setLastGeneratedModel(result.source === 'openai' ? (result.model ?? null) : null);
         setDraftMetric(scoreDraft(result.content, rlState, activeSteep));
         setImproveMsg('');
 
@@ -304,7 +308,10 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
 
           {/* D. Generation settings */}
           <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <h3 className="panel-title" style={{ margin: 0 }}>3. Draft generation</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+              <h3 className="panel-title" style={{ margin: 0 }}>3. Draft generation</h3>
+              {!healthLoading && <ModelIndicator lastGeneratedModel={lastGeneratedModel} compact />}
+            </div>
             <div>
               <label
                 htmlFor="generation-instructions"
@@ -398,13 +405,25 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
               </div>
             ) : postDraft ? (
               <>
-                {(draftSource || generateError) && (
-                  <p style={{ fontSize: '11px', color: generateError ? 'var(--color-danger)' : 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
-                    {generateError ??
-                      (draftSource === 'openai' ?
-                        'Draft from OpenAI (unique each generate). Model: server OPENAI_DRAFT_MODEL (default gpt-5.5; ChatGPT names like GPT-5.6 are not API slugs).'
-                      : 'Draft from local template (add OPENAI_API_KEY to .env and restart dev for LLM drafts).')}
-                  </p>
+                {(draftSource || generateError || lastGeneratedModel) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {generateError ?
+                      <p style={{ fontSize: '11px', color: 'var(--color-danger)', margin: 0, lineHeight: 1.4 }}>
+                        {generateError}
+                      </p>
+                    : draftSource === 'openai' ?
+                      <>
+                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                          Draft from OpenAI (unique each generate).
+                        </p>
+                        <ModelIndicator lastGeneratedModel={lastGeneratedModel} compact />
+                      </>
+                    : draftSource === 'local' ?
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                        Draft from local template (add OPENAI_API_KEY to .env and restart dev for LLM drafts).
+                      </p>
+                    : null}
+                  </div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' }}>Draft Content Editor</label>

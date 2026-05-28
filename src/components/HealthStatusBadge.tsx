@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-
-type HealthPayload = {
-  ok: boolean;
-  timestamp: string;
-  version: string;
-  warnings?: string[];
-  openai?: { configured: boolean; message: string };
-};
+import type { AppHealthPayload } from '../utils/appHealth';
 
 export function HealthStatusBadge(props: { label?: string; intervalMs?: number }) {
   const label = props.label ?? 'seeo Post Application';
@@ -15,12 +8,15 @@ export function HealthStatusBadge(props: { label?: string; intervalMs?: number }
   const [connected, setConnected] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [openaiHint, setOpenaiHint] = useState<string>('');
+  const [draftModel, setDraftModel] = useState<string>('');
 
   const tooltip = useMemo(() => {
     if (!connected) return error || 'Health check failed';
+    const modelLine = draftModel ? `Draft model: ${draftModel}` : '';
+    if (openaiHint && modelLine) return `${modelLine}. ${openaiHint}`;
     if (openaiHint) return openaiHint;
-    return '';
-  }, [connected, error, openaiHint]);
+    return modelLine;
+  }, [connected, error, openaiHint, draftModel]);
 
   useEffect(() => {
     let cancelled = false;
@@ -29,11 +25,12 @@ export function HealthStatusBadge(props: { label?: string; intervalMs?: number }
       try {
         const res = await fetch('/api/health', { method: 'GET', cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const payload = (await res.json()) as HealthPayload;
+        const payload = (await res.json()) as AppHealthPayload;
         if (!payload?.ok) throw new Error('Health check returned ok=false');
         if (cancelled) return;
         setConnected(true);
         setError('');
+        setDraftModel(payload.draftModel ?? '');
         setOpenaiHint(
           payload.openai && !payload.openai.configured ? payload.openai.message : ''
         );

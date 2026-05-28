@@ -22,6 +22,8 @@ export interface GenerateDraftResult {
   replacedPhrases: string[];
   wasFiltered: boolean;
   source: 'openai' | 'local';
+  /** OpenAI API slug when source is openai. */
+  model?: string;
 }
 
 function buildTopic(steepFocus: string[], groundedText: string): string {
@@ -68,6 +70,7 @@ export async function generateDraftWithFallback(
         replacedPhrases: filtered.replacements,
         wasFiltered: filtered.replacedCount > 0,
         source: 'openai',
+        model: apiResult.model,
       };
     } catch {
       // fall through to local template

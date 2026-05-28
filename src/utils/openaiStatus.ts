@@ -1,3 +1,5 @@
+import { fetchAppHealth } from './appHealth';
+
 export type OpenAIKeyStatus = 'configured' | 'missing_key' | 'missing_env_file';
 
 export type OpenAIHealth = {
@@ -6,14 +8,6 @@ export type OpenAIHealth = {
   message: string;
 };
 
-type HealthPayload = {
-  ok: boolean;
-  openai?: OpenAIHealth;
-};
-
-let cached: OpenAIHealth | null = null;
-let inflight: Promise<OpenAIHealth> | null = null;
-
 const FALLBACK: OpenAIHealth = {
   configured: false,
   status: 'missing_env_file',
@@ -21,24 +15,19 @@ const FALLBACK: OpenAIHealth = {
     'Could not reach /api/health. Start npm run dev, or set VITE_DRAFT_API_BASE_URL / VITE_IMAGE_API_BASE_URL in production.',
 };
 
+function openaiFromPayload(
+  openai: { configured: boolean; status?: OpenAIKeyStatus; message: string } | undefined
+): OpenAIHealth {
+  if (!openai) return FALLBACK;
+  return {
+    configured: openai.configured,
+    status: openai.status ?? (openai.configured ? 'configured' : 'missing_key'),
+    message: openai.message,
+  };
+}
+
 export async function fetchOpenAIHealth(force = false): Promise<OpenAIHealth> {
-  if (!force && cached) return cached;
-  if (!force && inflight) return inflight;
-
-  inflight = (async () => {
-    try {
-      const res = await fetch('/api/health', { method: 'GET', cache: 'no-store' });
-      if (!res.ok) return FALLBACK;
-      const payload = (await res.json()) as HealthPayload;
-      const openai = payload.openai ?? FALLBACK;
-      cached = openai;
-      return openai;
-    } catch {
-      return FALLBACK;
-    } finally {
-      inflight = null;
-    }
-  })();
-
-  return inflight;
+  const payload = await fetchAppHealth(force);
+  if (!payload?.openai) return FALLBACK;
+  return openaiFromPayload(payload.openai as OpenAIHealth);
 }
