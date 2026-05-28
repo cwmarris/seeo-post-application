@@ -20,7 +20,7 @@ export type AppHealthPayload = {
 
 const DEFAULT_MODELS: AppHealthModels = {
   draftModel: 'gpt-5.5',
-  imageModel: 'gpt-image-1',
+  imageModel: 'gpt-image-2',
   groundedImageModel: 'gpt-5.5',
 };
 

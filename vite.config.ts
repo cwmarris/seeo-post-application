@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
           const getApiKey = () =>
             normalizeApiKey(env.OPENAI_API_KEY ?? process.env.OPENAI_API_KEY)
           const getImageModel = () =>
-            env.OPENAI_IMAGE_MODEL || process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1'
+            env.OPENAI_IMAGE_MODEL || process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2'
           const getEnvDraftModel = () =>
             env.OPENAI_DRAFT_MODEL || process.env.OPENAI_DRAFT_MODEL
           const getEnvGroundedImageModel = () =>

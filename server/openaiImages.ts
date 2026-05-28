@@ -50,7 +50,7 @@ export function formatOpenAIImageError(raw: string): string {
   }
   if (lower.includes('invalid model') || lower.includes('model_not_found')) {
     return (
-      `Invalid image model. Set OPENAI_IMAGE_MODEL to a supported slug (default gpt-image-1). (${raw})`
+      `Invalid image model. Set OPENAI_IMAGE_MODEL to a supported slug (default gpt-image-2). (${raw})`
     );
   }
   return raw;

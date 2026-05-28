@@ -71,7 +71,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     clearScheduledLogs();
 
     if (!isRedo) {
-      addLog('Connecting to OpenAI Images API (gpt-image-1)...', 100);
+      addLog('Connecting to OpenAI Images API (gpt-image-2)...', 100);
       addLog(`Applying style: [${activeStyle.toUpperCase()}]`, 400);
       addLog('Matching seeo.ai brand palette (safety green / obsidian)...', 800);
     } else {

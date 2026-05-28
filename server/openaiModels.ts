@@ -9,7 +9,7 @@
  */
 
 export const DEFAULT_DRAFT_MODEL = 'gpt-5.5';
-export const DEFAULT_IMAGE_MODEL = 'gpt-image-1';
+export const DEFAULT_IMAGE_MODEL = 'gpt-image-2';
 export const DEFAULT_GROUNDED_IMAGE_MODEL = 'gpt-5.5';
 
 export function resolveImageModel(envModel: string | undefined): string {

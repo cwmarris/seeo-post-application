@@ -24,12 +24,12 @@ describe('buildHealthResponse', () => {
 
   it('includes resolved model slugs without secrets', () => {
     vi.stubEnv('OPENAI_DRAFT_MODEL', 'gpt-4.1');
-    vi.stubEnv('OPENAI_IMAGE_MODEL', 'gpt-image-1');
+    vi.stubEnv('OPENAI_IMAGE_MODEL', 'gpt-image-2');
     vi.stubEnv('OPENAI_GROUNDED_IMAGE_MODEL', 'gpt-4o');
 
     const payload = buildHealthResponse(undefined, { localDev: false });
     expect(payload.draftModel).toBe('gpt-4.1');
-    expect(payload.imageModel).toBe('gpt-image-1');
+    expect(payload.imageModel).toBe('gpt-image-2');
     expect(payload.groundedImageModel).toBe('gpt-4o');
     expect(JSON.stringify(payload)).not.toMatch(/sk-/);
   });
@@ -41,7 +41,7 @@ describe('buildHealthResponse', () => {
 
     const payload = buildHealthResponse(undefined, { localDev: false });
     expect(payload.draftModel).toBe('gpt-5.5');
-    expect(payload.imageModel).toBe('gpt-image-1');
+    expect(payload.imageModel).toBe('gpt-image-2');
     expect(payload.groundedImageModel).toBe('gpt-5.5');
   });
 });

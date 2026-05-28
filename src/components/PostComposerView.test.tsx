@@ -13,7 +13,7 @@ const healthPayload = {
   timestamp: new Date().toISOString(),
   version: 'test',
   draftModel: 'gpt-5.5',
-  imageModel: 'gpt-image-1',
+  imageModel: 'gpt-image-2',
   groundedImageModel: 'gpt-5.5',
   openai: { configured: true, message: 'OpenAI API key configured.' },
 };

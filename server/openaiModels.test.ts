@@ -41,9 +41,9 @@ describe('openaiModels', () => {
     expect(resolveGroundedImageModel('gpt-4o', 'gpt-4.1', 'evil-model')).toBe('gpt-4o');
   });
 
-  it('defaults image model to gpt-image-1', () => {
-    expect(DEFAULT_IMAGE_MODEL).toBe('gpt-image-1');
-    expect(resolveImageModel(undefined)).toBe('gpt-image-1');
+  it('defaults image model to gpt-image-2', () => {
+    expect(DEFAULT_IMAGE_MODEL).toBe('gpt-image-2');
+    expect(resolveImageModel(undefined)).toBe('gpt-image-2');
     expect(resolveImageModel('dall-e-3')).toBe('dall-e-3');
   });
 });

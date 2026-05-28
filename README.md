@@ -22,7 +22,7 @@ Post Composer → **seeo Visual Generator** calls the [OpenAI Images API](https:
 | Variable | Where | Purpose |
 |----------|--------|---------|
 | `OPENAI_API_KEY` | Server / `.env` | Required for image generation in dev |
-| `OPENAI_IMAGE_MODEL` | Server / `.env` | Default `gpt-image-1` |
+| `OPENAI_IMAGE_MODEL` | Server / `.env` | Default `gpt-image-2` |
 | `OPENAI_DRAFT_MODEL` | Server / `.env` | Default `gpt-5.5` for draft generate/improve (override e.g. `gpt-4.1` for lower cost) |
 | `OPENAI_GROUNDED_IMAGE_MODEL` | Server / `.env` | Optional; defaults to draft model for image grounding |
 | `VITE_IMAGE_API_BASE_URL` | Client | Production: origin of your proxy serving `POST /api/openai/images` |

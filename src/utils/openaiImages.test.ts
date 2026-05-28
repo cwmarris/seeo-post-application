@@ -19,7 +19,7 @@ describe('generateVisualAsset', () => {
         text: async () =>
           JSON.stringify({
             imageDataUrl: 'data:image/png;base64,abc',
-            model: 'gpt-image-1',
+            model: 'gpt-image-2',
           }),
       }))
     );

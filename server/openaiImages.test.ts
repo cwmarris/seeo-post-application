@@ -51,14 +51,14 @@ describe('generateOpenAIImageFromBody', () => {
     const result = await generateOpenAIImageFromBody(
       { prompt: 'A red circle' },
       '',
-      'gpt-image-1'
+      'gpt-image-2'
     );
     expect(result.status).toBe(503);
     expect('error' in result.body).toBe(true);
   });
 
   it('returns 400 when prompt is empty', async () => {
-    const result = await generateOpenAIImageFromBody({ prompt: '   ' }, 'sk-test', 'gpt-image-1');
+    const result = await generateOpenAIImageFromBody({ prompt: '   ' }, 'sk-test', 'gpt-image-2');
     expect(result.status).toBe(400);
   });
 
@@ -66,13 +66,13 @@ describe('generateOpenAIImageFromBody', () => {
     const result = await generateOpenAIImageFromBody(
       { prompt: 'A red circle', style: 'editorial' },
       'sk-test',
-      'gpt-image-1'
+      'gpt-image-2'
     );
 
     expect(result.status).toBe(200);
     expect(result.body).toMatchObject({
       imageDataUrl: 'data:image/png;base64,aGVsbG8=',
-      model: 'gpt-image-1',
+      model: 'gpt-image-2',
       revisedPrompt: 'refined',
     });
   });
@@ -92,7 +92,7 @@ describe('generateOpenAIImageFromBody', () => {
     const result = await generateOpenAIImageFromBody(
       { prompt: 'A red circle' },
       'sk-test',
-      'gpt-image-1'
+      'gpt-image-2'
     );
 
     expect(result.status).toBe(400);
