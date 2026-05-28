@@ -90,6 +90,19 @@ Do **not** set `VITE_CONVEX_URL` to `http://127.0.0.1:3210` on Vercel — that o
 
 ---
 
+## Still seeing “Supports PDF, CSV, or TXT (Simulated)”?
+
+That UI was removed in commit `07b1576` (May 2026). If production still shows **Quick Context Presets** and no **Upload file** button, Vercel is serving an **old static bundle** — not the wrong app.
+
+1. Confirm GitHub `main` is at or past `7c71717`.
+2. Vercel → project **seeo-post-application** → **Deployments** → **Redeploy** latest `main` (or push any commit to trigger a build).
+3. Set **`VITE_CONVEX_URL`** to your `https://….convex.cloud` URL before redeploying.
+4. Hard-refresh the browser (Cmd+Shift+R). New UI shows **Upload file**, **Supports TXT and CSV**, and a **Convex · …** or **Session-only** badge.
+
+Production check: open `https://seeo-post-application.vercel.app`, DevTools → Network → load `assets/index-*.js` and search for `Upload file` (should exist) and `Quick Context Presets` (should not).
+
+---
+
 ## Verify
 
 - [ ] `convex/` exists with `groundedDocuments.ts`, `schema.ts`

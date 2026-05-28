@@ -123,7 +123,7 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
           {isUploading ? 'Uploading…' : 'Drag SOPs, logs, or reports here'}
         </div>
         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-          TXT and CSV up to 512KB (PDF coming later)
+          Supports TXT and CSV · up to 512KB
         </div>
       </div>
 
