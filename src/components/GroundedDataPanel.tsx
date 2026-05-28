@@ -1,4 +1,4 @@
-import React, { useId, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Upload, FileText, Trash2, Loader2 } from 'lucide-react';
 import type { Id } from '../../convex/_generated/dataModel';
 import { getConvexDisplayHost } from '../convex/client';
@@ -20,6 +20,8 @@ interface GroundedDataPanelProps {
   isUploading: boolean;
 }
 
+const GROUNDED_FILE_INPUT_ID = 'grounded-file-input';
+
 export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
   convexReady,
   documents,
@@ -37,7 +39,6 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
 }) => {
   const [isDndActive, setIsDndActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const fileInputId = useId();
   const convexHost = getConvexDisplayHost();
 
   const handleFiles = (files: FileList | null) => {
@@ -85,13 +86,14 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
       )}
 
       <input
-        id={fileInputId}
+        id={GROUNDED_FILE_INPUT_ID}
         ref={fileInputRef}
+        className="grounded-file-input"
         type="file"
-        accept=".txt,.csv,text/plain,text/csv,application/csv,text/comma-separated-values"
+        accept=".txt,.csv,text/plain,text/csv"
         multiple
-        style={{ display: 'none' }}
         aria-label="Upload grounded context files"
+        disabled={isUploading}
         onChange={(e) => {
           handleFiles(e.target.files);
           e.target.value = '';
@@ -125,25 +127,21 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          className="btn-secondary"
-          style={{ fontSize: '12px' }}
-          disabled={isUploading}
-          onClick={openFilePicker}
-        >
-          Upload file
-        </button>
+      <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
         <label
-          htmlFor={fileInputId}
+          htmlFor={GROUNDED_FILE_INPUT_ID}
           className="btn-secondary"
-          style={{ fontSize: '12px', cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.6 : 1 }}
+          style={{
+            fontSize: '12px',
+            cursor: isUploading ? 'not-allowed' : 'pointer',
+            opacity: isUploading ? 0.6 : 1,
+            pointerEvents: isUploading ? 'none' : undefined,
+          }}
           aria-disabled={isUploading}
         >
-          Choose file…
+          Upload file
         </label>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)', alignSelf: 'center' }}>
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
           .txt and .csv only (max 512KB)
         </span>
       </div>

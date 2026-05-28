@@ -394,6 +394,19 @@
   padding: 20px;
 }
 
+/* Visually hidden but still "visible" to WebKit — display:none breaks macOS file picker */
+.grounded-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .dnd-area {
   border: 2px dashed rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-lg);
