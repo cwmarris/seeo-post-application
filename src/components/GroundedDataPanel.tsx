@@ -40,6 +40,8 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
     void onUploadFiles(files);
   };
 
+  const openFilePicker = () => fileInputRef.current?.click();
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDndActive(true);
@@ -75,9 +77,10 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".txt,.csv,text/plain,text/csv"
+        accept=".txt,.csv,.pdf,text/plain,text/csv,application/pdf"
         multiple
         style={{ display: 'none' }}
+        aria-label="Upload grounded context files"
         onChange={(e) => {
           handleFiles(e.target.files);
           e.target.value = '';
@@ -89,13 +92,14 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={openFilePicker}
         role="button"
         tabIndex={0}
+        aria-label="Open grounded context file picker"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            fileInputRef.current?.click();
+            openFilePicker();
           }
         }}
       >
@@ -108,6 +112,21 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
           TXT and CSV up to 512KB (PDF coming later)
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          className="btn-secondary"
+          style={{ fontSize: '12px' }}
+          disabled={isUploading}
+          onClick={openFilePicker}
+        >
+          Upload file
+        </button>
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)', alignSelf: 'center' }}>
+          Tip: PDF selection is allowed but will show a warning until extraction is enabled.
+        </span>
       </div>
 
       {uploadError && (
