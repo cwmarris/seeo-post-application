@@ -15,7 +15,9 @@
 | Impressions, clicks, engagement | Analytics endpoints on share/ugc posts | Not available from a static SPA without backend token exchange |
 | Personal profile analytics | Limited vs Company Page | seeo founders may post as individuals — check latest LinkedIn developer docs |
 
-**Honest limit:** This repo does **not** ship LinkedIn OAuth or a token vault. Production monitoring needs a small backend (store refresh tokens, fetch analytics on a schedule).
+**OAuth + posting (staging):** The app now ships LinkedIn OAuth and `POST /api/linkedin/post` with **`LINKEDIN_POST_MODE`** defaulting to **`dry_run`** (no live posts). Tokens are stored per browser session in Convex (`linkedinConnections`). See [LINKEDIN_API.md](./LINKEDIN_API.md).
+
+**Analytics:** Live Marketing API analytics sync is still **not** implemented. Production monitoring still needs scheduled fetch of impressions/engagement after posts are published with `LINKEDIN_POST_MODE=live`.
 
 ## MVP architecture (implemented)
 
@@ -37,25 +39,34 @@ Mock fields align with common analytics shapes:
 flowchart LR
   subgraph client [Vite SPA]
     Dashboard[Post performance panel]
+    Composer[Post Composer]
   end
-  subgraph backend [Your API - not in repo yet]
-    OAuth[LinkedIn OAuth callback]
-    Sync[Cron: fetch analytics]
-    DB[(Post metrics store)]
+  subgraph backend [Vercel API + Convex]
+    OAuth[GET /api/linkedin/auth + callback]
+    Post[POST /api/linkedin/post]
+    Sync[Cron: fetch analytics - TODO]
+    DB[(linkedinConnections + metrics)]
   end
   LinkedIn[LinkedIn Marketing API]
-  Dashboard -->|GET /api/metrics| Sync
-  Sync --> LinkedIn
+  Composer --> Post
+  Post --> LinkedIn
   OAuth --> LinkedIn
+  Dashboard -->|GET /api/metrics - TODO| Sync
+  Sync --> LinkedIn
 ```
 
-### Suggested steps
+### Implemented (posting)
 
-1. Register LinkedIn Developer app; request scopes for posting/analytics as needed.
-2. Add server routes: `GET /api/linkedin/auth`, `GET /api/linkedin/callback`, `POST /api/linkedin/sync`.
-3. Map API response → `PostPerformanceMetrics` (set `source: 'linkedin'`).
-4. Replace `generateMockMetrics` when `source === 'linkedin'` exists for `postId`.
-5. Link scheduled posts: match `post.id` to LinkedIn `shareUrn` after publish.
+1. Register LinkedIn Developer app — see [LINKEDIN_API.md](./LINKEDIN_API.md).
+2. Routes: `GET /api/linkedin/auth`, `GET /api/linkedin/callback`, `GET /api/linkedin/status`, `POST /api/linkedin/post`.
+3. Set `LINKEDIN_POST_MODE=live` only when ready to create real posts.
+
+### Remaining (analytics sync)
+
+1. Add `POST /api/linkedin/sync` (or cron) to pull share/ugc analytics.
+2. Map API response → `PostPerformanceMetrics` (set `source: 'linkedin'`).
+3. Replace `generateMockMetrics` when `source === 'linkedin'` exists for `postId`.
+4. Link scheduled posts: match `post.id` to LinkedIn `shareUrn` after publish (`postUrn` returned from live post).
 
 ## Mapping autoresearch metrics → post RL
 

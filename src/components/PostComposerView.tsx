@@ -15,7 +15,9 @@ import { useOpenAIHealth } from '../hooks/useOpenAIHealth';
 import { GroundedDocumentsBridge } from './GroundedDocumentsBridge';
 import { ImageGenerator } from './ImageGenerator';
 import { LinkedInPreview } from './LinkedInPreview';
+import { LinkedInConnectionPanel } from './LinkedInConnectionPanel';
 import { ModelIndicator } from './ModelIndicator';
+import { postToLinkedIn } from '../utils/linkedinApi';
 
 interface PostComposerViewProps {
   onAddPost: (post: LinkedInPost) => void;
@@ -54,6 +56,8 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
   const [draftSource, setDraftSource] = useState<'openai' | 'local' | null>(null);
   const [lastGeneratedModel, setLastGeneratedModel] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [publishMsg, setPublishMsg] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
   const { openai: openaiHealth, loading: healthLoading } = useOpenAIHealth();
   const openaiConfigured = openaiHealth?.configured ?? isOpenAIDraftConfigured();
 
@@ -222,20 +226,35 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
 
   const handlePublishNow = () => {
     if (!postDraft) return;
-    const newPost: LinkedInPost = {
-      id: `post-${Date.now()}`,
-      authorId: selectedAuthor,
-      content: postDraft,
-      image: selectedImage,
-      status: 'published',
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      steepFocus: activeSteep,
-      tone: selectedTone
-    };
-    onAddPost(newPost);
-    alert('🎉 Successfully published to the live Sandbox feed!');
+    setPublishMsg(null);
+    setIsPublishing(true);
+
+    void (async () => {
+      try {
+        const linkedInResult = await postToLinkedIn(postDraft);
+        const newPost: LinkedInPost = {
+          id: `post-${Date.now()}`,
+          authorId: selectedAuthor,
+          content: postDraft,
+          image: selectedImage,
+          status: 'published',
+          likes: 0,
+          comments: 0,
+          shares: 0,
+          steepFocus: activeSteep,
+          tone: selectedTone,
+        };
+        onAddPost(newPost);
+
+        const previewNote =
+          linkedInResult.previewUrl ? ` Preview: ${linkedInResult.previewUrl}` : '';
+        setPublishMsg(`${linkedInResult.message}${previewNote}`);
+      } catch (err) {
+        setPublishMsg(err instanceof Error ? err.message : 'Publish failed');
+      } finally {
+        setIsPublishing(false);
+      }
+    })();
   };
 
   const handleConfirmSchedule = () => {
@@ -261,6 +280,8 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
         
         {/* Left Side: Creation Controls */}
         <div className="composer-left">
+
+          <LinkedInConnectionPanel />
           
           {/* A. Profile Selector */}
           <div className="glass-card" style={{ padding: '20px' }}>
@@ -711,13 +732,31 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
                 </div>
 
                 {/* 6. Action buttons */}
+                {publishMsg && (
+                  <div
+                    data-testid="linkedin-publish-message"
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--color-primary)',
+                      fontWeight: 600,
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(16, 185, 129, 0.25)',
+                      background: 'rgba(16, 185, 129, 0.06)',
+                    }}
+                  >
+                    {publishMsg}
+                  </div>
+                )}
+
                 <div className="composer-actions">
                   <button
                     className="btn btn-accent"
                     style={{ flex: 1, padding: '12px' }}
                     onClick={handlePublishNow}
+                    disabled={isPublishing}
                   >
-                    Post Immediately
+                    {isPublishing ? 'Posting…' : 'Post Immediately'}
                   </button>
                   <button
                     className="btn btn-secondary"

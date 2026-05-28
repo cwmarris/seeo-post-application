@@ -36,6 +36,7 @@ Post Composer → **seeo Visual Generator** calls the [OpenAI Images API](https:
 
 See [docs/AUTORESEARCH.md](./docs/AUTORESEARCH.md) — **not** the GPU submodule. In Post Composer: **Improve draft** runs a keep/discard loop using RL state (+ OpenAI when `OPENAI_API_KEY` is set).
 
+LinkedIn OAuth + posting (dry-run by default): [docs/LINKEDIN_API.md](./docs/LINKEDIN_API.md).  
 LinkedIn analytics MVP: [docs/LINKEDIN_MONITORING.md](./docs/LINKEDIN_MONITORING.md).
 
 ## Grounded Context (Production)

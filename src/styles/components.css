@@ -1221,3 +1221,41 @@ select.text-input-grounded,
   border-color: var(--border-glass-highlight);
   box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.14);
 }
+
+/* LinkedIn connection panel */
+.linkedin-connection-panel {
+  margin-bottom: 4px;
+}
+
+.linkedin-status-banner {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  border: 1px solid var(--border-glass);
+}
+
+.linkedin-banner--muted {
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--text-muted);
+}
+
+.linkedin-banner--warn {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.35);
+  color: #fbbf24;
+}
+
+.linkedin-banner--dry {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.28);
+  color: var(--color-primary);
+}
+
+.linkedin-banner--live {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+}

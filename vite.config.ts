@@ -5,6 +5,7 @@ import { createOpenAIImageMiddleware } from './server/openaiImages'
 import { createGroundedImageMiddleware } from './server/openaiGroundedImage'
 import { createOpenAIDraftMiddleware } from './server/openaiDraft'
 import { createHealthMiddleware } from './server/health'
+import { createLinkedInMiddleware } from './server/linkedinHandlers'
 import { normalizeApiKey } from './server/openaiEnv'
 import {
   DEFAULT_GROUNDED_IMAGE_MODEL,
@@ -48,6 +49,7 @@ export default defineConfig(({ mode }) => {
             )
           )
           server.middlewares.use(createOpenAIDraftMiddleware(getApiKey, getEnvDraftModel))
+          server.middlewares.use(createLinkedInMiddleware())
         },
       },
     ],
