@@ -7,9 +7,9 @@ import {
 } from './openaiModels.js';
 
 describe('openaiModels', () => {
-  it('defaults draft model to gpt-4.1', () => {
-    expect(DEFAULT_DRAFT_MODEL).toBe('gpt-4.1');
-    expect(resolveDraftModel(undefined)).toBe('gpt-4.1');
+  it('defaults draft model to gpt-5.5', () => {
+    expect(DEFAULT_DRAFT_MODEL).toBe('gpt-5.5');
+    expect(resolveDraftModel(undefined)).toBe('gpt-5.5');
   });
 
   it('uses env model when set', () => {
@@ -21,17 +21,20 @@ describe('openaiModels', () => {
   });
 
   it('rejects non-allowlisted request model', () => {
-    expect(resolveDraftModel('gpt-4.1', 'gpt-5-ultra')).toBe('gpt-4.1');
-    expect(resolveDraftModel(undefined, 'o1-preview')).toBe('gpt-4.1');
+    expect(resolveDraftModel('gpt-5.5', 'gpt-5-ultra')).toBe('gpt-5.5');
+    expect(resolveDraftModel(undefined, 'o1-preview')).toBe('gpt-5.5');
+    expect(resolveDraftModel(undefined, 'gpt-5.6')).toBe('gpt-5.5');
   });
 
   it('recognizes allowlisted models', () => {
     expect(isAllowedRequestDraftModel('gpt-4o-mini')).toBe(true);
-    expect(isAllowedRequestDraftModel('gpt-5')).toBe(false);
+    expect(isAllowedRequestDraftModel('gpt-5')).toBe(true);
+    expect(isAllowedRequestDraftModel('gpt-5.5')).toBe(true);
+    expect(isAllowedRequestDraftModel('gpt-5.6')).toBe(false);
   });
 
   it('resolves grounded image model with same allowlist rules', () => {
-    expect(resolveGroundedImageModel(undefined, undefined)).toBe('gpt-4.1');
+    expect(resolveGroundedImageModel(undefined, undefined)).toBe('gpt-5.5');
     expect(resolveGroundedImageModel('gpt-4o', 'gpt-4.1', 'gpt-4o-mini')).toBe('gpt-4o-mini');
     expect(resolveGroundedImageModel('gpt-4o', 'gpt-4.1', 'evil-model')).toBe('gpt-4o');
   });

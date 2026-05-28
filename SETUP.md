@@ -12,7 +12,7 @@ Quick checklist for **Grounded Context (Convex)** + **Vercel production**. No se
 | `CONVEX_DEPLOY_KEY` | Optional (CI only) | Optional (CI only) | Only if you run `convex deploy` from GitHub Actions / Vercel build — not required for the React client |
 | `OPENAI_API_KEY` | `.env` | **Required** (server) | Unchanged; never `VITE_` prefix |
 | `OPENAI_IMAGE_MODEL` | Optional | Optional | Default in code: `gpt-image-1` |
-| `OPENAI_DRAFT_MODEL` | Optional | Optional | Default: `gpt-4.1` |
+| `OPENAI_DRAFT_MODEL` | Optional | Optional | Default: `gpt-5.5` (API slug; not the ChatGPT product label) |
 | `OPENAI_GROUNDED_IMAGE_MODEL` | Optional | Optional | Defaults to `OPENAI_DRAFT_MODEL` |
 | `VITE_IMAGE_API_BASE_URL` | Usually unset locally | Set if static host ≠ API origin | Production image proxy |
 | `VITE_DRAFT_API_BASE_URL` | Usually unset locally | Set if static host ≠ API origin | Production draft API |

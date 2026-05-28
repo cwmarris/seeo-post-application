@@ -1,10 +1,23 @@
-/** Defaults and allowlist for OpenAI Chat models used by draft + vision routes. */
+/**
+ * Defaults and allowlist for OpenAI Chat models used by draft + vision routes.
+ *
+ * ChatGPT product names (e.g. "GPT-5.5 Thinking") differ from API model slugs
+ * (e.g. `gpt-5.5`). There is no API slug `gpt-5.6` as of 2026-05; use env
+ * `OPENAI_DRAFT_MODEL` to pick any slug your key can call.
+ *
+ * @see https://developers.openai.com/api/docs/models
+ */
 
-export const DEFAULT_DRAFT_MODEL = 'gpt-4.1';
-export const DEFAULT_GROUNDED_IMAGE_MODEL = 'gpt-4.1';
+export const DEFAULT_DRAFT_MODEL = 'gpt-5.5';
+export const DEFAULT_GROUNDED_IMAGE_MODEL = 'gpt-5.5';
 
 /** Models clients may request via API body (abuse prevention). Env override is not restricted. */
 export const ALLOWED_REQUEST_DRAFT_MODELS = [
+  'gpt-5.5',
+  'gpt-5.4-mini',
+  'gpt-5.4-nano',
+  'gpt-5',
+  'gpt-5-mini',
   'gpt-4.1',
   'gpt-4.1-mini',
   'gpt-4.1-nano',

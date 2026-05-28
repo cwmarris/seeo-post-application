@@ -397,7 +397,7 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
                   <p style={{ fontSize: '11px', color: generateError ? 'var(--color-danger)' : 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
                     {generateError ??
                       (draftSource === 'openai' ?
-                        'Draft from OpenAI (unique each generate).'
+                        'Draft from OpenAI (unique each generate). Model: server OPENAI_DRAFT_MODEL (default gpt-5.5; ChatGPT names like GPT-5.6 are not API slugs).'
                       : 'Draft from local template (add OPENAI_API_KEY to .env and restart dev for LLM drafts).')}
                   </p>
                 )}
