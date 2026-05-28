@@ -102,6 +102,29 @@ describe('handleGenerateDraftBody', () => {
     vi.restoreAllMocks();
   });
 
+  it('sends improve-mode generation instructions in the user message', async () => {
+    await handleGenerateDraftBody(
+      {
+        ...baseBody,
+        mode: 'improve',
+        draft: 'Original draft text.',
+        generationInstructions: 'Sharpen the CTA and cut the second paragraph.',
+        targetLength: 'long',
+      },
+      'sk-test-key',
+      'gpt-5.5'
+    );
+
+    const fetchMock = vi.mocked(globalThis.fetch);
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const payload = JSON.parse(init.body as string) as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    expect(payload.messages[1]?.content).toContain('Sharpen the CTA');
+    expect(payload.messages[1]?.content).toContain('1,200–1,600');
+    expect(payload.messages[0]?.content).toContain('1,200–1,600');
+  });
+
   it('passes generation instructions and target length to OpenAI messages', async () => {
     await handleGenerateDraftBody(
       {

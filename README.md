@@ -63,13 +63,20 @@ python3 scripts/autoresearch_generate.py \
   --author "Craig Marris"
 ```
 
+## What to do now
+
+Quick checklist: **git pull** → set `OPENAI_DRAFT_MODEL=gpt-5.5` in `.env` → `npm install` → `npm run test` → manual QA in Post Composer → **`vercel deploy --prod`** from `main` with `OPENAI_API_KEY` + `OPENAI_DRAFT_MODEL` on Vercel → hard refresh.
+
+Full steps, manual draft QA loop, and `npm run test:draft`: **[TESTING.md](./TESTING.md)**.
+
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Dev server + OpenAI image proxy |
 | `npm run build` | Production build |
-| `npm run test` | Vitest |
+| `npm run test` | Vitest (full suite) |
+| `npm run test:draft` | Draft prompts, models, and local template quality tests only |
 | `npm run lint` | ESLint |
 | `npm run convex:dev` | Convex dev deployment + codegen |
 | `npm run convex:deploy` | Deploy Convex functions to production |

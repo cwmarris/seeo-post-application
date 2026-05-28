@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest",
+    "test:draft": "vitest run server/openaiDraft.test.ts server/openaiModels.test.ts src/utils/draftQuality.test.ts src/utils/postGenerator.test.ts",
     "test:ui": "vitest --ui",
     "generate:draft": "python3 scripts/autoresearch_generate.py",
     "convex:dev": "convex dev",
