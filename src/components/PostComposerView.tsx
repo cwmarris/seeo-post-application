@@ -30,6 +30,8 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
   // Post inputs
   const [selectedAuthor, setSelectedAuthor] = useState<string>('craig');
   const [selectedTone, setSelectedTone] = useState<string>('Thought Leader');
+  const [targetLength, setTargetLength] = useState<'short' | 'medium' | 'long'>('medium');
+  const [generationInstructions, setGenerationInstructions] = useState('');
   const [activeSteep, setActiveSteep] = useState<string[]>(['Social', 'Technological']);
   const [groundedText, setGroundedText] = useState('');
   
@@ -70,6 +72,8 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
           groundedText,
           rlState,
           aspectFeedback: selectedFeedback,
+          generationInstructions: generationInstructions.trim() || undefined,
+          targetLength,
         }
       : null,
     [
@@ -80,6 +84,8 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
       groundedText,
       rlState,
       selectedFeedback,
+      generationInstructions,
+      targetLength,
     ]
   );
 
@@ -118,6 +124,8 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
           steepFocus: activeSteep,
           groundedText,
           rlState,
+          generationInstructions: generationInstructions.trim() || undefined,
+          targetLength,
         });
         setPostDraft(result.content);
         setReplacedPhrases(result.replacedPhrases);
@@ -289,27 +297,63 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
           {/* C. Grounded Data */}
           <GroundedDocumentsBridge onEffectiveGroundedTextChange={setGroundedText} />
 
-          {/* D. Tone Selector & Generation Button */}
-          <div className="glass-card" style={{ padding: '20px' }}>
+          {/* D. Generation settings */}
+          <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h3 className="panel-title" style={{ margin: 0 }}>3. Draft generation</h3>
+            <div>
+              <label
+                htmlFor="generation-instructions"
+                style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}
+              >
+                Generation instructions
+              </label>
+              <textarea
+                id="generation-instructions"
+                className="text-input-grounded"
+                placeholder="Angle, must-include facts, CTA, audience, or constraints for this post…"
+                style={{ minHeight: '72px', fontSize: '13px', lineHeight: 1.4 }}
+                value={generationInstructions}
+                onChange={(e) => setGenerationInstructions(e.target.value)}
+              />
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '6px 0 0', lineHeight: 1.4 }}>
+                Passed to OpenAI with author voice, STEEP lenses, and grounded context. Also used when improving a draft.
+              </p>
+            </div>
             <div className="composer-generate-row">
-              <div className="composer-generate-row-left">
-                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
-                  Copywriting Tone
-                </label>
-                <select
-                  className="text-input-grounded select-input-grounded"
-                  value={selectedTone}
-                  onChange={(e) => setSelectedTone(e.target.value)}
-                >
-                  <option value="Thought Leader">Thought Leader (Analytical & Governance)</option>
-                  <option value="Founder Story">Founder Story (Coretex / seedigital History)</option>
-                  <option value="Tech Visionary">Tech Visionary (AI & Sensor Telemetry)</option>
-                  <option value="Conversational">Conversational (Direct & Engaging)</option>
-                </select>
+              <div className="composer-generate-row-left" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                    Copywriting tone
+                  </label>
+                  <select
+                    className="text-input-grounded select-input-grounded"
+                    value={selectedTone}
+                    onChange={(e) => setSelectedTone(e.target.value)}
+                  >
+                    <option value="Thought Leader">Thought Leader (Analytical & Governance)</option>
+                    <option value="Founder Story">Founder Story (Coretex / seedigital History)</option>
+                    <option value="Tech Visionary">Tech Visionary (AI & Sensor Telemetry)</option>
+                    <option value="Conversational">Conversational (Direct & Engaging)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                    Target length
+                  </label>
+                  <select
+                    className="text-input-grounded select-input-grounded"
+                    value={targetLength}
+                    onChange={(e) => setTargetLength(e.target.value as 'short' | 'medium' | 'long')}
+                  >
+                    <option value="short">Short (~550–850 chars)</option>
+                    <option value="medium">Medium (~850–1,200 chars)</option>
+                    <option value="long">Long (~1,200–1,600 chars)</option>
+                  </select>
+                </div>
               </div>
               <button
                 className="btn btn-accent btn-icon"
-                style={{ height: '42px', display: 'flex', gap: '8px', padding: '0 24px' }}
+                style={{ height: '42px', display: 'flex', gap: '8px', padding: '0 24px', alignSelf: 'flex-end' }}
                 onClick={handleGenerateDraft}
                 disabled={isGenerating}
               >

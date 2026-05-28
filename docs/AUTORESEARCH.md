@@ -66,7 +66,7 @@ Read `vendor/autoresearch/program.md` for the canonical loop (branch tag, `resul
 Static `vite build` output does not include the dev proxy.
 
 1. Deploy API routes: `api/generate/draft.ts`, `api/openai/images.ts` (see `vercel.json`).
-2. Set env: `OPENAI_API_KEY`, optional `OPENAI_DRAFT_MODEL` (default `gpt-4o-mini`), `OPENAI_IMAGE_MODEL`.
+2. Set env: `OPENAI_API_KEY`, optional `OPENAI_DRAFT_MODEL` (default `gpt-4.1`), `OPENAI_IMAGE_MODEL`.
 3. Client env (build time):
    - `VITE_DRAFT_API_BASE_URL` — origin for draft API (often same as app URL).
    - `VITE_IMAGE_API_BASE_URL` — origin for image API.

@@ -4,6 +4,8 @@ import { filterBannedPhrases, type RLState } from './rlEngine';
 import { improveDraftViaApi } from './openaiDraft';
 import { fetchOpenAIHealth } from './openaiStatus';
 
+export type DraftTargetLength = 'short' | 'medium' | 'long';
+
 export interface GenerateDraftInput {
   authorId: string;
   tone: string;
@@ -11,6 +13,8 @@ export interface GenerateDraftInput {
   groundedText: string;
   rlState: RLState;
   topic?: string;
+  generationInstructions?: string;
+  targetLength?: DraftTargetLength;
 }
 
 export interface GenerateDraftResult {
@@ -48,6 +52,8 @@ export async function generateDraftWithFallback(
         steepFocus: input.steepFocus,
         groundedText: input.groundedText,
         topic,
+        generationInstructions: input.generationInstructions,
+        targetLength: input.targetLength,
         rlContext: {
           bannedWords: input.rlState.bannedWords,
           steepWeights: input.rlState.steepWeights,

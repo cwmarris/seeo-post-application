@@ -19,6 +19,8 @@ export interface AutoresearchExperiment {
 const EXPERIMENTS_KEY = 'seeo_autoresearch_experiments';
 const AUTO_IMPROVE_KEY = 'seeo_autoresearch_auto_improve';
 
+export type DraftTargetLength = 'short' | 'medium' | 'long';
+
 export interface ImproveDraftInput {
   draft: string;
   authorId: string;
@@ -28,6 +30,8 @@ export interface ImproveDraftInput {
   rlState: RLState;
   aspectFeedback?: string[];
   preferOpenAI?: boolean;
+  generationInstructions?: string;
+  targetLength?: DraftTargetLength;
 }
 
 export interface ImproveDraftResult {
@@ -139,7 +143,17 @@ function applyLocalImprovements(
 export async function runImproveDraftIteration(
   input: ImproveDraftInput
 ): Promise<ImproveDraftResult> {
-  const { draft, authorId, tone, steepFocus, groundedText, rlState, aspectFeedback } = input;
+  const {
+    draft,
+    authorId,
+    tone,
+    steepFocus,
+    groundedText,
+    rlState,
+    aspectFeedback,
+    generationInstructions,
+    targetLength,
+  } = input;
   const profile = FOUNDER_PROFILES.find((p) => p.id === authorId) ?? FOUNDER_PROFILES[0];
   const previousMetric = scoreDraft(draft, rlState, steepFocus);
 
@@ -163,6 +177,8 @@ export async function runImproveDraftIteration(
         steepFocus,
         groundedText,
         draft,
+        generationInstructions,
+        targetLength,
         rlContext: {
           bannedWords: rlState.bannedWords,
           steepWeights: rlState.steepWeights,

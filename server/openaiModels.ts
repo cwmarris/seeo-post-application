@@ -1,0 +1,66 @@
+/** Defaults and allowlist for OpenAI Chat models used by draft + vision routes. */
+
+export const DEFAULT_DRAFT_MODEL = 'gpt-4.1';
+export const DEFAULT_GROUNDED_IMAGE_MODEL = 'gpt-4.1';
+
+/** Models clients may request via API body (abuse prevention). Env override is not restricted. */
+export const ALLOWED_REQUEST_DRAFT_MODELS = [
+  'gpt-4.1',
+  'gpt-4.1-mini',
+  'gpt-4.1-nano',
+  'gpt-4o',
+  'gpt-4o-mini',
+] as const;
+
+export type AllowedRequestDraftModel = (typeof ALLOWED_REQUEST_DRAFT_MODELS)[number];
+
+export type DraftTargetLength = 'short' | 'medium' | 'long';
+
+export const TARGET_LENGTH_GUIDANCE: Record<
+  DraftTargetLength,
+  { label: string; charRange: string; maxParagraphs: string }
+> = {
+  short: {
+    label: 'Short',
+    charRange: '550–850',
+    maxParagraphs: '4–6',
+  },
+  medium: {
+    label: 'Medium',
+    charRange: '850–1,200',
+    maxParagraphs: '6–8',
+  },
+  long: {
+    label: 'Long',
+    charRange: '1,200–1,600',
+    maxParagraphs: '8–10',
+  },
+};
+
+export function isAllowedRequestDraftModel(model: string): model is AllowedRequestDraftModel {
+  return (ALLOWED_REQUEST_DRAFT_MODELS as readonly string[]).includes(model);
+}
+
+/** Env/default first; optional request model only if allowlisted. */
+export function resolveDraftModel(
+  envModel: string | undefined,
+  requestedModel?: string
+): string {
+  const base = (envModel ?? DEFAULT_DRAFT_MODEL).trim() || DEFAULT_DRAFT_MODEL;
+  const req = requestedModel?.trim();
+  if (req && isAllowedRequestDraftModel(req)) return req;
+  return base;
+}
+
+export function resolveGroundedImageModel(
+  envGrounded: string | undefined,
+  envDraft: string | undefined,
+  requestedModel?: string
+): string {
+  const base =
+    (envGrounded ?? envDraft ?? DEFAULT_GROUNDED_IMAGE_MODEL).trim() ||
+    DEFAULT_GROUNDED_IMAGE_MODEL;
+  const req = requestedModel?.trim();
+  if (req && isAllowedRequestDraftModel(req)) return req;
+  return base;
+}

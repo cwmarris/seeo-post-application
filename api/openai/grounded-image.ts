@@ -3,6 +3,7 @@ import {
   handleGroundedImageBody,
   type GroundedImageBody,
 } from '../../server/openaiGroundedImage.js';
+import { resolveGroundedImageModel } from '../../server/openaiModels.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -10,10 +11,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const result = await handleGroundedImageBody(
-    req.body as GroundedImageBody,
-    process.env.OPENAI_API_KEY ?? '',
-    process.env.OPENAI_GROUNDED_IMAGE_MODEL ?? process.env.OPENAI_DRAFT_MODEL ?? 'gpt-4o-mini'
+  const body = req.body as GroundedImageBody & { model?: string };
+  const model = resolveGroundedImageModel(
+    process.env.OPENAI_GROUNDED_IMAGE_MODEL,
+    process.env.OPENAI_DRAFT_MODEL,
+    body.model
   );
+
+  const result = await handleGroundedImageBody(body, process.env.OPENAI_API_KEY ?? '', model);
   res.status(result.status).json(result.body);
 }

@@ -7,6 +7,8 @@ export interface DraftRLContext {
   aspectFeedback?: string[];
 }
 
+export type DraftTargetLength = 'short' | 'medium' | 'long';
+
 export interface ImproveDraftApiParams {
   mode: 'generate' | 'improve';
   authorId: string;
@@ -17,6 +19,8 @@ export interface ImproveDraftApiParams {
   groundedText?: string;
   topic?: string;
   draft?: string;
+  generationInstructions?: string;
+  targetLength?: DraftTargetLength;
   rlContext: DraftRLContext;
 }
 

@@ -12,7 +12,8 @@ Quick checklist for **Grounded Context (Convex)** + **Vercel production**. No se
 | `CONVEX_DEPLOY_KEY` | Optional (CI only) | Optional (CI only) | Only if you run `convex deploy` from GitHub Actions / Vercel build — not required for the React client |
 | `OPENAI_API_KEY` | `.env` | **Required** (server) | Unchanged; never `VITE_` prefix |
 | `OPENAI_IMAGE_MODEL` | Optional | Optional | Default in code: `gpt-image-1` |
-| `OPENAI_DRAFT_MODEL` | Optional | Optional | Default: `gpt-4o-mini` |
+| `OPENAI_DRAFT_MODEL` | Optional | Optional | Default: `gpt-4.1` |
+| `OPENAI_GROUNDED_IMAGE_MODEL` | Optional | Optional | Defaults to `OPENAI_DRAFT_MODEL` |
 | `VITE_IMAGE_API_BASE_URL` | Usually unset locally | Set if static host ≠ API origin | Production image proxy |
 | `VITE_DRAFT_API_BASE_URL` | Usually unset locally | Set if static host ≠ API origin | Production draft API |
 
@@ -84,6 +85,21 @@ Do **not** add `CONVEX_DEPLOYMENT` or deploy keys unless you automate `convex de
 
 Redeploy the Vercel project after changing env vars.
 
+### Git-connected deploys (recommended)
+
+Link the Vercel project to GitHub (`cwmarris/seeo-post-application`, production branch **`main`**). Pushes to `main` then build and promote production automatically. If only manual or CLI deploys run, GitHub `main` can be ahead of what users see at `https://seeo-post-application.vercel.app`.
+
+**Manual production deploy** (when Git is not hooked up or you need to force a fresh build):
+
+```bash
+git checkout main && git pull origin main
+vercel deploy --prod --yes
+```
+
+**Dashboard:** Project → **Deployments** → **Create Deployment** → branch **`main`** → disable **Use existing Build Cache** → deploy.
+
+---
+
 **Important:** `VITE_*` variables are embedded at **build** time. Adding or changing `VITE_CONVEX_URL` in the Vercel UI does nothing until you trigger a new production deployment.
 
 Do **not** set `VITE_CONVEX_URL` to `http://127.0.0.1:3210` on Vercel — that only works on your laptop with `npx convex dev`. Use your `https://….convex.cloud` production URL. If a production build ever contained a localhost URL, the app now ignores it and falls back to session-only uploads until you fix the env var and redeploy.
@@ -94,12 +110,12 @@ Do **not** set `VITE_CONVEX_URL` to `http://127.0.0.1:3210` on Vercel — that o
 
 That UI was removed in commit `07b1576` (May 2026). If production still shows **Quick Context Presets** and no **Upload file** button, Vercel is serving an **old static bundle** — not the wrong app.
 
-1. Confirm GitHub `main` is at or past `7c71717`.
-2. Vercel → project **seeo-post-application** → **Deployments** → **Redeploy** latest `main` (or push any commit to trigger a build).
+1. Confirm GitHub `main` is at or past `057863c` (multi-format uploads: PDF, DOCX, images).
+2. Redeploy production (Git push to `main`, `vercel deploy --prod --yes`, or dashboard **Create Deployment** on `main` with build cache off).
 3. Set **`VITE_CONVEX_URL`** to your `https://….convex.cloud` URL before redeploying.
-4. Hard-refresh the browser (Cmd+Shift+R). New UI shows **Upload file**, **Supports TXT and CSV**, and a **Convex · …** or **Session-only** badge.
+4. Hard-refresh the browser (Cmd+Shift+R). Grounded Context should show **Upload file** and supported types including **.docx** (not legacy “Quick Context Presets”).
 
-Production check: open `https://seeo-post-application.vercel.app`, DevTools → Network → load `assets/index-*.js` and search for `Upload file` (should exist) and `Quick Context Presets` (should not).
+Production bundle check: load `assets/index-*.js` from the live site and search the file — expect **`Upload file`**, **`.docx`**, **`grounded-image`**; do **not** expect **`Quick Context Presets`**.
 
 ---
 
