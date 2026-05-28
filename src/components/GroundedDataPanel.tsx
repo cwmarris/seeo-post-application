@@ -70,7 +70,7 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
 
       {!convexReady && (
         <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-          Set <code>VITE_CONVEX_URL</code> and run <code>npx convex dev</code> to persist uploads. Manual paste still works for this session.
+          Convex is not configured, so uploads are stored locally for this session only. Set <code>VITE_CONVEX_URL</code> and run <code>npx convex dev</code> to persist uploads.
         </p>
       )}
 
