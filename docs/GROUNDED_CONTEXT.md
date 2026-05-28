@@ -16,7 +16,7 @@ flowchart LR
 
 | Layer | Responsibility |
 |-------|----------------|
-| `GroundedDataPanel` | Upload TXT/CSV, select docs, manual editor, delete |
+| `GroundedDataPanel` | Upload TXT/CSV/PDF/DOCX/images, select docs, manual editor, delete |
 | `useGroundedDocuments` | Session id, Convex queries/mutations, selection state |
 | `buildGroundedTextFromSelection` | Merges selected docs + manual paste for prompts |
 | `convex/groundedDocuments` | `listBySession`, `createFromText`, `remove` |
@@ -24,8 +24,12 @@ flowchart LR
 
 ## Supported files
 
-- **TXT / CSV** — read in the browser, stored as `textContent` (max 512KB, 200k chars server-side).
-- **PDF** — not enabled in v1 (client rejects; add a Convex `"use node"` action later for extraction).
+- **TXT / CSV** — read in the browser (max 512KB).
+- **PDF** — text extracted in the browser via pdf.js (max 10MB). Scanned/image-only PDFs fail with a clear error.
+- **Word (.docx)** — plain text via mammoth in the browser (max 10MB). Legacy `.doc` is rejected — save as `.docx`.
+- **JPEG / PNG** — described via OpenAI Vision (`POST /api/openai/grounded-image`, max 5MB). Requires `OPENAI_API_KEY` on Vercel; **redeploy** after adding the route.
+
+All uploads store `name`, `mimeType`, and extracted `textContent` in Convex `groundedDocuments` (200k chars max per doc, 50 docs per session).
 
 ## Security
 

@@ -3,6 +3,13 @@ import { Upload, FileText, Trash2, Loader2 } from 'lucide-react';
 import type { Id } from '../../convex/_generated/dataModel';
 import { getConvexDisplayHost } from '../convex/client';
 import type { GroundedDocumentRow } from '../hooks/groundedDocumentsTypes';
+import {
+  GROUNDED_ACCEPT_ATTRIBUTE,
+  GROUNDED_SUPPORTED_TYPES_LABEL,
+  MAX_GROUNDED_IMAGE_BYTES,
+  MAX_GROUNDED_PDF_BYTES,
+  MAX_GROUNDED_TEXT_BYTES,
+} from '../utils/groundedContext';
 
 interface GroundedDataPanelProps {
   convexReady: boolean;
@@ -21,6 +28,8 @@ interface GroundedDataPanelProps {
 }
 
 const GROUNDED_FILE_INPUT_ID = 'grounded-file-input';
+
+const GROUNDED_SIZE_HINT = `TXT/CSV up to ${Math.round(MAX_GROUNDED_TEXT_BYTES / 1024)}KB · images ${MAX_GROUNDED_IMAGE_BYTES / (1024 * 1024)}MB · PDF/Word ${MAX_GROUNDED_PDF_BYTES / (1024 * 1024)}MB`;
 
 export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
   convexReady,
@@ -90,7 +99,7 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
         ref={fileInputRef}
         className="grounded-file-input"
         type="file"
-        accept=".txt,.csv,text/plain,text/csv"
+        accept={GROUNDED_ACCEPT_ATTRIBUTE}
         multiple
         aria-label="Upload grounded context files"
         disabled={isUploading}
@@ -123,7 +132,7 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
           {isUploading ? 'Uploading…' : 'Drag SOPs, logs, or reports here'}
         </div>
         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-          Supports TXT and CSV · up to 512KB
+          Supports {GROUNDED_SUPPORTED_TYPES_LABEL} · {GROUNDED_SIZE_HINT}
         </div>
       </div>
 
@@ -142,7 +151,7 @@ export const GroundedDataPanel: React.FC<GroundedDataPanelProps> = ({
           Upload file
         </label>
         <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-          .txt and .csv only (max 512KB)
+          {GROUNDED_SUPPORTED_TYPES_LABEL} ({GROUNDED_SIZE_HINT})
         </span>
       </div>
 
