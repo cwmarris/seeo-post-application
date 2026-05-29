@@ -232,6 +232,8 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
     void (async () => {
       try {
         const linkedInResult = await postToLinkedIn(postDraft);
+        const previewNote =
+          linkedInResult.previewUrl ? ` Preview: ${linkedInResult.previewUrl}` : '';
         const newPost: LinkedInPost = {
           id: `post-${Date.now()}`,
           authorId: selectedAuthor,
@@ -243,11 +245,15 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
           shares: 0,
           steepFocus: activeSteep,
           tone: selectedTone,
+          publishResult: {
+            mode: linkedInResult.mode,
+            message: linkedInResult.message,
+            previewUrl: linkedInResult.previewUrl,
+            postUrn: linkedInResult.postUrn,
+          },
         };
         onAddPost(newPost);
 
-        const previewNote =
-          linkedInResult.previewUrl ? ` Preview: ${linkedInResult.previewUrl}` : '';
         setPublishMsg(`${linkedInResult.message}${previewNote}`);
       } catch (err) {
         setPublishMsg(err instanceof Error ? err.message : 'Publish failed');
@@ -418,15 +424,15 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
           />
         </div>
 
-        {/* Right Side: Live LinkedIn sandbox and editing preview */}
+        {/* Right Side: Live LinkedIn editor and preview */}
         <div className="composer-right">
           <div className="glass-card" style={{ padding: '20px', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div className="panel-header" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px', width: '100%' }}>
                 <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Send size={18} color="var(--color-primary)" /> Live Editor & LinkedIn Sandbox
+                  <Send size={18} color="var(--color-primary)" /> Live Editor & LinkedIn Preview
                 </h3>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Pixel-perfect simulator</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Draft preview</span>
               </div>
               {postDraft && !isGenerating && !healthLoading && (
                 <ModelIndicator lastGeneratedModel={lastGeneratedModel} variant="banner" />
@@ -657,16 +663,16 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
                   </div>
                 </div>
 
-                {/* 4. LinkedIn Live Preview Frame */}
+                {/* 4. LinkedIn live preview frame */}
                 <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '20px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '10px', display: 'block' }}>
-                    Sandbox Feed Preview
+                    LinkedIn Feed Preview
                   </label>
                   <LinkedInPreview
                     authorId={selectedAuthor}
                     content={postDraft}
                     image={selectedImage}
-                    timestamp="Sandbox Preview"
+                    timestamp="Draft Preview"
                   />
                 </div>
 

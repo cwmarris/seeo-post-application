@@ -61,6 +61,24 @@ export async function disconnectLinkedIn(sessionId?: string): Promise<void> {
   }
 }
 
+export async function setLinkedInPostMode(
+  mode: Extract<LinkedInPostMode, 'dry_run' | 'live'>,
+  sessionId?: string
+): Promise<Pick<LinkedInStatusResponse, 'postMode' | 'livePostingEnabled'>> {
+  const id = sessionId ?? getGroundedSessionId();
+  const res = await fetch(`${apiBase()}/api/linkedin/mode`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId: id, mode }),
+  });
+
+  const body = (await res.json()) as Pick<LinkedInStatusResponse, 'postMode' | 'livePostingEnabled'> & { error?: string };
+  if (!res.ok) {
+    throw new Error(body.error ?? `LinkedIn mode change failed (${res.status})`);
+  }
+  return body;
+}
+
 export async function postToLinkedIn(commentary: string, sessionId?: string): Promise<LinkedInPostApiResult> {
   const id = sessionId ?? getGroundedSessionId();
   const res = await fetch(`${apiBase()}/api/linkedin/post`, {

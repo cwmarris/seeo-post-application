@@ -12,6 +12,26 @@ import {
   resolveGroundedImageModel,
 } from './server/openaiModels'
 
+const LOCAL_SERVER_ENV_KEYS = [
+  'CONVEX_URL',
+  'VITE_CONVEX_URL',
+  'LINKEDIN_CLIENT_ID',
+  'LINKEDIN_CLIENT_SECRET',
+  'LINKEDIN_REDIRECT_URI',
+  'LINKEDIN_POST_MODE',
+  'LINKEDIN_API_VERSION',
+  'LINKEDIN_APP_RETURN_URL',
+]
+
+function hydrateLocalServerEnv(env: Record<string, string>) {
+  for (const key of LOCAL_SERVER_ENV_KEYS) {
+    const value = env[key]
+    if (value && !process.env[key]) {
+      process.env[key] = value
+    }
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   return {
@@ -21,6 +41,8 @@ export default defineConfig(({ mode }) => {
         name: 'openai-images-dev-proxy',
         configureServer(server) {
           const env = loadEnv(mode, server.config.envDir || process.cwd(), '')
+          // Vite exposes .env to the client, but custom local API middleware reads process.env.
+          hydrateLocalServerEnv(env)
           const getApiKey = () =>
             normalizeApiKey(env.OPENAI_API_KEY ?? process.env.OPENAI_API_KEY)
           const getImageModel = () =>

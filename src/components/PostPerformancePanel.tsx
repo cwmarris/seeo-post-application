@@ -1,33 +1,21 @@
-import React, { useMemo } from 'react';
-import { BarChart3, TrendingUp, TrendingDown, Minus, ExternalLink } from 'lucide-react';
+import React from 'react';
+import { BarChart3, ExternalLink } from 'lucide-react';
 import { FOUNDER_PROFILES, type LinkedInPost } from '../utils/mockData';
-import {
-  syncMetricsForPosts,
-  aggregateMetrics,
-  type PostPerformanceMetrics,
-} from '../utils/postMetrics';
 
 interface PostPerformancePanelProps {
   posts: LinkedInPost[];
   onSelectScheduled?: (postId: string) => void;
 }
 
-function TrendIcon({ trend }: { trend: PostPerformanceMetrics['trend'] }) {
-  if (trend === 'up') return <TrendingUp size={14} color="var(--color-primary)" />;
-  if (trend === 'down') return <TrendingDown size={14} color="#f87171" />;
-  return <Minus size={14} color="var(--text-muted)" />;
-}
-
 export const PostPerformancePanel: React.FC<PostPerformancePanelProps> = ({
   posts,
   onSelectScheduled,
 }) => {
-  const metrics = useMemo(() => syncMetricsForPosts(posts), [posts]);
-  const summary = useMemo(() => aggregateMetrics(metrics), [metrics]);
-
   const trackedPosts = posts.filter(
     (p) => p.status === 'published' || p.status === 'scheduled'
   );
+  const publishedCount = trackedPosts.filter((p) => p.status === 'published').length;
+  const scheduledCount = trackedPosts.filter((p) => p.status === 'scheduled').length;
 
   return (
     <div className="glass-card dashboard-panel" style={{ marginTop: '20px' }}>
@@ -39,22 +27,22 @@ export const PostPerformancePanel: React.FC<PostPerformancePanelProps> = ({
           <BarChart3 size={18} color="var(--color-accent)" /> Post performance
         </h3>
         <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-          Mock metrics · LinkedIn API not connected
+          Workspace activity
         </span>
       </div>
 
       <div className="dashboard-grid" style={{ marginBottom: '16px' }}>
         <div className="glass-card stat-card" style={{ padding: '12px' }}>
           <span className="stat-value" style={{ fontSize: '18px' }}>
-            {summary.totalImpressions.toLocaleString()}
+            {publishedCount}
           </span>
-          <span className="stat-label">Total impressions (simulated)</span>
+          <span className="stat-label">Published posts</span>
         </div>
         <div className="glass-card stat-card" style={{ padding: '12px' }}>
           <span className="stat-value" style={{ fontSize: '18px' }}>
-            {summary.averageEngagement}
+            {scheduledCount}
           </span>
-          <span className="stat-label">Avg. engagement rate</span>
+          <span className="stat-label">Scheduled posts</span>
         </div>
       </div>
 
@@ -64,9 +52,7 @@ export const PostPerformancePanel: React.FC<PostPerformancePanelProps> = ({
             Publish or schedule posts to see per-post performance here.
           </p>
         : trackedPosts.map((post) => {
-            const m = metrics.find((x) => x.postId === post.id);
             const profile = FOUNDER_PROFILES.find((p) => p.id === post.authorId);
-            if (!m) return null;
             return (
               <div
                 key={post.id}
@@ -101,7 +87,6 @@ export const PostPerformancePanel: React.FC<PostPerformancePanelProps> = ({
                     >
                       {post.status}
                     </span>
-                    <TrendIcon trend={m.trend} />
                   </div>
                   <p
                     style={{
@@ -125,11 +110,12 @@ export const PostPerformancePanel: React.FC<PostPerformancePanelProps> = ({
                       color: 'var(--text-main)',
                     }}
                   >
-                    <span>{m.impressions.toLocaleString()} impr.</span>
-                    <span>{m.engagementRate}% eng.</span>
-                    <span>{m.reactions} reactions</span>
-                    <span>{m.comments} comments</span>
-                    <span>{m.shares} shares</span>
+                    {post.publishResult ?
+                      <span>
+                        LinkedIn {post.publishResult.mode === 'live' ? 'live' : post.publishResult.mode.replace('_', ' ')}
+                      </span>
+                    : <span>Workspace post</span>}
+                    {post.scheduledTime && <span>{new Date(post.scheduledTime).toLocaleString()}</span>}
                   </div>
                 </div>
                 {post.status === 'scheduled' && onSelectScheduled && (

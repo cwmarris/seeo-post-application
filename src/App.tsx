@@ -72,7 +72,7 @@ export const App: React.FC = () => {
       case 'dashboard':
         return {
           title: 'Analytics Dashboard',
-          subtitle: 'Active social queue and live LinkedIn feed simulations.'
+          subtitle: 'Active queue and LinkedIn publishing workspace.'
         };
       case 'composer':
         return {

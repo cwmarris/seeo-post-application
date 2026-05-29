@@ -26,6 +26,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   const publishedPosts = posts.filter((p) => p.status === 'published');
   const scheduledPosts = posts.filter((p) => p.status === 'scheduled');
+  const latestPublishResult = posts.find((p) => p.publishResult)?.publishResult;
   const scheduledById = useMemo(() => new Map(scheduledPosts.map((p) => [p.id, p])), [scheduledPosts]);
   const [activeScheduledId, setActiveScheduledId] = useState<string | null>(null);
   const activeScheduledPost = activeScheduledId ? scheduledById.get(activeScheduledId) ?? null : null;
@@ -79,15 +80,50 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
+      {latestPublishResult && (
+        <div
+          className="glass-card"
+          role="status"
+          style={{
+            marginBottom: '18px',
+            padding: '14px 16px',
+            border: '1px solid rgba(16, 185, 129, 0.28)',
+            background: 'rgba(16, 185, 129, 0.08)',
+            color: 'var(--text-main)',
+          }}
+        >
+          <div style={{ fontSize: '13px', fontWeight: 800, marginBottom: '4px' }}>
+            LinkedIn {latestPublishResult.mode === 'live' ? 'post created' : 'test succeeded'}
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+            {latestPublishResult.message}
+            {latestPublishResult.mode === 'dry_run' ? ' No live LinkedIn post was created.' : ''}
+            {latestPublishResult.previewUrl && (
+              <>
+                {' '}
+                <a
+                  href={latestPublishResult.previewUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: 'var(--color-primary)', fontWeight: 700 }}
+                >
+                  View preview
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 2. Main Layout (Mock Feed vs Scheduler Queue) */}
       <div className="dashboard-layout">
         {/* Left Side: Mock LinkedIn Feed */}
         <div className="glass-card dashboard-panel">
           <div className="panel-header">
             <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Zap size={18} color="var(--color-primary)" /> seeo KNOW Live Feed
+              <Zap size={18} color="var(--color-primary)" /> LinkedIn Feed
             </h3>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Simulated LinkedIn Sandbox</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Posts from this workspace</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxHeight: '700px', overflowY: 'auto', paddingRight: '8px' }}>
@@ -103,7 +139,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               ))
             ) : (
               <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                No published posts yet. Complete a draft in the Composer to publish immediately!
+                No published posts yet. Create a draft in the Composer when you are ready.
               </div>
             )}
           </div>

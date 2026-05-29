@@ -11,13 +11,14 @@ import {
   getLinkedInStatus,
   getLinkedInTokenRow,
   saveLinkedInConnection,
+  setLinkedInStoredPostMode,
 } from './linkedinConvex.js';
 import {
   getAppReturnBase,
   getLinkedInRedirectUri,
   isLinkedInOAuthConfigured,
-  resolveLinkedInPostMode,
 } from './linkedinEnv.js';
+import { getEffectiveLinkedInPostMode, isSwitchableLinkedInPostMode } from './linkedinMode.js';
 
 function readQuery(req: IncomingMessage): URLSearchParams {
   const url = req.url ?? '';
@@ -194,14 +195,74 @@ export async function handleLinkedInStatus(
     return;
   }
 
-  const postMode = resolveLinkedInPostMode(process.env.LINKEDIN_POST_MODE);
   const oauthConfigured = isLinkedInOAuthConfigured();
   const status = await getLinkedInStatus(sessionId);
+  const postMode = getEffectiveLinkedInPostMode(status.postMode);
 
   sendJson(res, 200, {
     ...status,
     postMode,
     oauthConfigured,
+    livePostingEnabled: postMode === 'live',
+  });
+}
+
+export async function handleLinkedInMode(
+  req: IncomingMessage,
+  res: ServerResponse
+): Promise<void> {
+  if (req.method !== 'POST') {
+    sendJson(res, 405, { error: 'Method not allowed' });
+    return;
+  }
+
+  let body: { sessionId?: string; mode?: string };
+  try {
+    body = await readJsonBody(req);
+  } catch {
+    sendJson(res, 400, { error: 'Invalid JSON body' });
+    return;
+  }
+
+  const sessionId = requireSessionId(readQuery(req), body);
+  if (!sessionId) {
+    sendJson(res, 400, { error: 'sessionId is required' });
+    return;
+  }
+
+  const mode = body.mode?.trim();
+  if (!isSwitchableLinkedInPostMode(mode)) {
+    sendJson(res, 400, { error: 'mode must be dry_run or live' });
+    return;
+  }
+
+  if (!isLinkedInOAuthConfigured()) {
+    sendJson(res, 503, { error: 'LinkedIn OAuth is not configured' });
+    return;
+  }
+
+  const connection = await getLinkedInTokenRow(sessionId);
+  if (!connection) {
+    sendJson(res, 401, { error: 'Connect LinkedIn before changing post mode' });
+    return;
+  }
+  if (connection.expiresAt < Date.now()) {
+    sendJson(res, 401, { error: 'LinkedIn access token expired — reconnect LinkedIn' });
+    return;
+  }
+
+  if (mode === 'live') {
+    const scopes = connection.scopes ?? '';
+    if (!scopes.includes('w_member_social')) {
+      sendJson(res, 403, { error: 'LinkedIn connection is missing w_member_social scope' });
+      return;
+    }
+  }
+
+  const nextStatus = await setLinkedInStoredPostMode(sessionId, mode);
+  const postMode = getEffectiveLinkedInPostMode(nextStatus.postMode);
+  sendJson(res, 200, {
+    postMode,
     livePostingEnabled: postMode === 'live',
   });
 }
@@ -262,8 +323,8 @@ export async function handleLinkedInPost(
     return;
   }
 
-  const postMode = resolveLinkedInPostMode(process.env.LINKEDIN_POST_MODE);
   const connection = await getLinkedInTokenRow(sessionId);
+  const postMode = getEffectiveLinkedInPostMode(connection?.postMode);
 
   if (!connection && postMode !== 'mock') {
     sendJson(res, 401, {
@@ -324,6 +385,10 @@ export function createLinkedInMiddleware(
         }
         if (path === '/api/linkedin/status') {
           await handleLinkedInStatus(req, res);
+          return;
+        }
+        if (path === '/api/linkedin/mode') {
+          await handleLinkedInMode(req, res);
           return;
         }
         if (path === '/api/linkedin/disconnect' && req.method === 'POST') {

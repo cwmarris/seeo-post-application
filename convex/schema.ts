@@ -25,6 +25,7 @@ export default defineSchema({
     refreshToken: v.optional(v.string()),
     expiresAt: v.number(),
     scopes: v.optional(v.string()),
+    postMode: v.optional(v.union(v.literal('dry_run'), v.literal('live'))),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index('by_session', ['sessionId']),

@@ -5,6 +5,8 @@ import {
   fetchLinkedInStatus,
   getLinkedInAuthUrl,
   linkedInBannerLabel,
+  setLinkedInPostMode,
+  type LinkedInPostMode,
   type LinkedInStatusResponse,
 } from '../utils/linkedinApi';
 import { getGroundedSessionId } from '../utils/groundedSession';
@@ -71,6 +73,29 @@ export const LinkedInConnectionPanel: React.FC<LinkedInConnectionPanelProps> = (
     })();
   };
 
+  const handleSetPostMode = (mode: Extract<LinkedInPostMode, 'dry_run' | 'live'>) => {
+    if (mode === status?.postMode) return;
+    if (
+      mode === 'live' &&
+      !window.confirm('Switch to live LinkedIn posting? The next Post Immediately action will publish to LinkedIn.')
+    ) {
+      return;
+    }
+
+    void (async () => {
+      setBusy(true);
+      setError(null);
+      try {
+        await setLinkedInPostMode(mode);
+        await refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Mode change failed');
+      } finally {
+        setBusy(false);
+      }
+    })();
+  };
+
   const bannerClass =
     !status || !status.oauthConfigured ? 'linkedin-banner--muted'
     : !status.connected ? 'linkedin-banner--warn'
@@ -95,6 +120,38 @@ export const LinkedInConnectionPanel: React.FC<LinkedInConnectionPanelProps> = (
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {status?.connected && (
+            <div
+              aria-label="LinkedIn post mode"
+              style={{
+                display: 'flex',
+                gap: '4px',
+                padding: '3px',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.03)',
+              }}
+            >
+              <button
+                type="button"
+                className={status.postMode === 'dry_run' ? 'btn btn-primary' : 'btn btn-secondary'}
+                style={{ fontSize: '12px', padding: '7px 10px' }}
+                disabled={busy || loading}
+                onClick={() => handleSetPostMode('dry_run')}
+              >
+                Dry run
+              </button>
+              <button
+                type="button"
+                className={status.postMode === 'live' ? 'btn btn-accent' : 'btn btn-secondary'}
+                style={{ fontSize: '12px', padding: '7px 10px' }}
+                disabled={busy || loading}
+                onClick={() => handleSetPostMode('live')}
+              >
+                Live
+              </button>
+            </div>
+          )}
           {status?.connected ?
             <button
               type="button"

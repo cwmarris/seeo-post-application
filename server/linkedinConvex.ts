@@ -1,6 +1,6 @@
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../convex/_generated/api.js';
-import { getConvexUrlForServer } from './linkedinEnv.js';
+import { getConvexUrlForServer, type LinkedInPostMode } from './linkedinEnv.js';
 
 export type StoredLinkedInConnection = {
   sessionId: string;
@@ -12,6 +12,7 @@ export type StoredLinkedInConnection = {
   refreshToken?: string;
   expiresAt: number;
   scopes?: string;
+  postMode?: Extract<LinkedInPostMode, 'dry_run' | 'live'>;
 };
 
 export type PublicLinkedInStatus = {
@@ -22,6 +23,7 @@ export type PublicLinkedInStatus = {
   memberUrn?: string;
   expiresAt?: number;
   scopes?: string;
+  postMode?: Extract<LinkedInPostMode, 'dry_run' | 'live'>;
 };
 
 function getClient(): ConvexHttpClient | null {
@@ -59,6 +61,7 @@ export async function getLinkedInTokenRow(
     refreshToken: row.refreshToken,
     expiresAt: row.expiresAt,
     scopes: row.scopes,
+    postMode: row.postMode,
   };
 }
 
@@ -83,6 +86,18 @@ export async function saveLinkedInConnection(
     expiresAt: connection.expiresAt,
     scopes: connection.scopes,
   });
+}
+
+export async function setLinkedInStoredPostMode(
+  sessionId: string,
+  postMode: Extract<LinkedInPostMode, 'dry_run' | 'live'>
+): Promise<PublicLinkedInStatus> {
+  const client = getClient();
+  if (!client) {
+    throw new Error('Convex is not configured for LinkedIn mode storage');
+  }
+
+  return await client.mutation(api.linkedinConnections.setPostMode, { sessionId, postMode });
 }
 
 export async function disconnectLinkedIn(sessionId: string): Promise<void> {

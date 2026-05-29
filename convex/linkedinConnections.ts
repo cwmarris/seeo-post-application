@@ -13,6 +13,7 @@ const connectionValidator = v.object({
   refreshToken: v.optional(v.string()),
   expiresAt: v.number(),
   scopes: v.optional(v.string()),
+  postMode: v.optional(v.union(v.literal('dry_run'), v.literal('live'))),
   createdAt: v.number(),
   updatedAt: v.number(),
 });
@@ -25,6 +26,7 @@ const publicConnectionValidator = v.object({
   memberUrn: v.optional(v.string()),
   expiresAt: v.optional(v.number()),
   scopes: v.optional(v.string()),
+  postMode: v.optional(v.union(v.literal('dry_run'), v.literal('live'))),
 });
 
 export const getBySession = query({
@@ -51,6 +53,7 @@ export const getBySession = query({
       memberUrn: row.memberUrn,
       expiresAt: row.expiresAt,
       scopes: row.scopes,
+      postMode: row.postMode,
     };
   },
 });
@@ -66,6 +69,43 @@ export const getTokenBySession = query({
       .query('linkedinConnections')
       .withIndex('by_session', (q) => q.eq('sessionId', sessionId))
       .unique();
+  },
+});
+
+export const setPostMode = mutation({
+  args: {
+    sessionId: v.string(),
+    postMode: v.union(v.literal('dry_run'), v.literal('live')),
+  },
+  returns: publicConnectionValidator,
+  handler: async (ctx, args) => {
+    const sessionId = args.sessionId.trim();
+    if (!sessionId) throw new Error('sessionId is required');
+
+    const existing = await ctx.db
+      .query('linkedinConnections')
+      .withIndex('by_session', (q) => q.eq('sessionId', sessionId))
+      .unique();
+
+    if (!existing) {
+      throw new Error('LinkedIn is not connected for this session');
+    }
+
+    await ctx.db.patch(existing._id, {
+      postMode: args.postMode,
+      updatedAt: Date.now(),
+    });
+
+    return {
+      connected: true,
+      memberId: existing.memberId,
+      memberName: existing.memberName,
+      memberEmail: existing.memberEmail,
+      memberUrn: existing.memberUrn,
+      expiresAt: existing.expiresAt,
+      scopes: existing.scopes,
+      postMode: args.postMode,
+    };
   },
 });
 

@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import {
   handleLinkedInAuth,
+  handleLinkedInMode,
   handleLinkedInPost,
   handleLinkedInStatus,
 } from './linkedinHandlers.js';
@@ -94,5 +95,39 @@ describe('linkedinHandlers', () => {
     const body = JSON.parse(res.body);
     expect(body.mode).toBe('mock');
     expect(body.success).toBe(true);
+  });
+
+  it('switches live mode only when the session is connected', async () => {
+    vi.spyOn(linkedinConvex, 'getLinkedInTokenRow').mockResolvedValue({
+      sessionId: 'sess-1',
+      memberId: 'member-1',
+      memberName: 'Craig Marris',
+      memberUrn: 'urn:li:person:member-1',
+      accessToken: 'token',
+      expiresAt: Date.now() + 3600_000,
+      scopes: 'openid profile email w_member_social',
+    });
+    vi.spyOn(linkedinConvex, 'setLinkedInStoredPostMode').mockResolvedValue({
+      connected: true,
+      memberId: 'member-1',
+      memberName: 'Craig Marris',
+      memberUrn: 'urn:li:person:member-1',
+      expiresAt: Date.now() + 3600_000,
+      scopes: 'openid profile email w_member_social',
+      postMode: 'live',
+    });
+
+    const req = mockRequest('POST', '/api/linkedin/mode', JSON.stringify({
+      sessionId: 'sess-1',
+      mode: 'live',
+    }));
+    const res = mockResponse();
+
+    await handleLinkedInMode(req, res);
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.postMode).toBe('live');
+    expect(body.livePostingEnabled).toBe(true);
   });
 });

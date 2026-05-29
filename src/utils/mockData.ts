@@ -23,6 +23,12 @@ export interface LinkedInPost {
   steepFocus: string[];
   tone: string;
   feedback?: string;
+  publishResult?: {
+    mode: 'mock' | 'dry_run' | 'live';
+    message: string;
+    previewUrl?: string;
+    postUrn?: string;
+  };
 }
 
 export const FOUNDER_PROFILES: FounderProfile[] = [
@@ -61,84 +67,14 @@ export const FOUNDER_PROFILES: FounderProfile[] = [
   }
 ];
 
-export const INITIAL_POSTS: LinkedInPost[] = [
-  {
-    id: 'post-1',
-    authorId: 'craig',
-    content: `Safety isn’t just a line in a corporate policy handbook. It's what happens on the warehouse floor when nobody is looking. 
-
-In my years building Coretex, we proved that telematics could save lives by making fleet operations visible. But a massive blind spot remained: the physical warehouse and manufacturing floor. 
-
-At seeo.ai, we talk about the gap between "Work as Imagined" (our beautiful, written SOPs) and "Work as Done" (the real-world shortcut a forklift driver takes). 
-
-By using AI on existing CCTV cameras, we aren't "spying" on people—we are giving management the "cultural artefacts" (real-world video clips of safety deviations) needed to coach, educate, and prevent accidents before they occur. 
-
-Safety culture isn't built on hindsight. It's built on real-time visibility. 
-
-#WorkplaceSafety #SafetyGovernance #AI #Logistics #seeo`,
-    image: '/warehouse_safety.png',
-    status: 'published',
-    likes: 142,
-    comments: 24,
-    shares: 11,
-    steepFocus: ['Social', 'Technological'],
-    tone: 'Thought Leader'
-  },
-  {
-    id: 'post-2',
-    authorId: 'dean',
-    content: `For decades, telemetry meant reading engine data, GPS coords, and harsh braking events. But what if the most critical sensor in your industrial facility is the one you already own?
-
-Your security CCTV camera.
-
-By running AI models on existing camera streams, we are transforming standard video into dynamic safety sensors. We can now detect:
-- Pedestrian-forklift proximity violations in real-time.
-- Staff operating in hazardous zones without PPE.
-- Exact durations of forklift speeds exceeding limits in high-density corridors.
-
-This isn't futuristic science fiction; it is immediate operational telemetry. By connecting the dots between IoT and video analytics, seeo.ai helps managers transition from reactive hindsight to proactive foresight.
-
-Let's make the invisible visible.
-
-#AI #IoT #VideoAnalytics #IndustrialSafety #Telematics #seeo`,
-    image: '/warehouse_safety.png',
-    status: 'scheduled',
-    scheduledTime: '2026-05-28T09:00:00',
-    steepFocus: ['Technological', 'Economic'],
-    tone: 'Tech Visionary'
-  },
-  {
-    id: 'post-3',
-    authorId: 'bede',
-    content: `When I founded seedigital back in 2003, CCTV was purely about security and theft prevention. If something went wrong, you rewound the tape to see who did it. That was hindsight.
-
-Fast forward over twenty years. 
-
-Cameras are no longer passive recorders. With seeo.ai, they are active operational partners. 
-
-We can now look at a warehouse, detect near-misses in real-time, and flag systematic deviations from standard procedures. We're taking the 24/7 audit out of the spreadsheets and putting it directly on the screen. 
-
-This technological evolution is driving massive economic benefits: lower insurance premiums, fewer operational shutdowns, and most importantly, making sure everyone gets home safely at the end of the shift.
-
-Continuous improvement isn't a goal; it's a practice.
-
-#AI #SafetyFirst #CCTV #OperationalIntelligence #RiskManagement`,
-    image: '/steep_framework.png',
-    status: 'published',
-    likes: 89,
-    comments: 15,
-    shares: 6,
-    steepFocus: ['Technological', 'Economic', 'Environmental'],
-    tone: 'Founder Story'
-  }
-];
+export const INITIAL_POSTS: LinkedInPost[] = [];
 
 export const INITIAL_ANALYTICS = {
-  totalImpressions: 14850,
-  averageEngagement: '4.8%',
-  rlScore: 92,
-  scheduledCount: 1,
-  publishedCount: 2,
+  totalImpressions: 0,
+  averageEngagement: '0%',
+  rlScore: 0,
+  scheduledCount: 0,
+  publishedCount: 0,
   frameworkDistribution: {
     Social: 30,
     Technological: 45,

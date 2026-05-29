@@ -19,9 +19,9 @@ const DEFAULT_RL_STATE: RLState = {
   },
   emojiDensity: 'low',
   hookStyle: 'provocative',
-  bannedPhrasesReplacedCount: 4,
-  postCountRated: 3,
-  averageRating: 4.5
+  bannedPhrasesReplacedCount: 0,
+  postCountRated: 0,
+  averageRating: 0
 };
 
 const BANNED_SYNONYMS: Record<string, string> = {
