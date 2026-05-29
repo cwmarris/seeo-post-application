@@ -1,86 +1,61 @@
 # LinkedIn post performance monitoring
 
-## Audit (current codebase)
+## Current implementation
 
-**Before this work:** The Dashboard showed aggregate counters (RL index, avg rating, scheduled count, likes+comments from in-app mock posts). There was **no** per-post impressions, engagement rate trends, or LinkedIn API integration.
+The Dashboard **Post performance** panel now supports real member-post analytics:
 
-**Now (MVP):** Dashboard includes a **Post performance** panel (`PostPerformancePanel.tsx`) with per-post mock metrics stored in `localStorage` (`seeo_post_performance_metrics`). Structure is ready for real API fields.
+1. Live posts created by `POST /api/linkedin/post` are tracked in Convex table `linkedinPosts` with the returned LinkedIn `postUrn`.
+2. `POST /api/linkedin/metrics` calls LinkedIn `memberCreatorPostAnalytics` for each tracked post.
+3. Metrics snapshots are stored in Convex table `linkedinPostMetrics`.
+4. The Dashboard displays real totals for impressions, reactions, comments, reposts, and engagement rate.
 
-## LinkedIn API reality
+The app intentionally shows `REACTION` rather than “likes only” because LinkedIn member analytics reports total reactions across LinkedIn reaction types.
 
-| Capability | Typical access | Notes |
-|------------|----------------|-------|
-| Post as member | OAuth 2.0 (Marketing / Community APIs) | App review, scoped permissions |
-| Organic post analytics | LinkedIn Marketing API / partner programs | Often requires company page + approved app |
-| Impressions, clicks, engagement | Analytics endpoints on share/ugc posts | Not available from a static SPA without backend token exchange |
-| Personal profile analytics | Limited vs Company Page | seeo founders may post as individuals — check latest LinkedIn developer docs |
+## LinkedIn API requirements
 
-**OAuth + posting (staging):** The app now ships LinkedIn OAuth and `POST /api/linkedin/post` with **`LINKEDIN_POST_MODE`** defaulting to **`dry_run`** (no live posts). Tokens are stored per browser session in Convex (`linkedinConnections`). See [LINKEDIN_API.md](./LINKEDIN_API.md).
+Member/founder post analytics require OAuth scope:
 
-**Analytics:** Live Marketing API analytics sync is still **not** implemented. Production monitoring still needs scheduled fetch of impressions/engagement after posts are published with `LINKEDIN_POST_MODE=live`.
+- `r_member_postAnalytics`
 
-## MVP architecture (implemented)
+The app requests this by default through `LINKEDIN_ENABLE_MEMBER_ANALYTICS=true`. If LinkedIn has not approved the scope/product yet, OAuth may fail; set `LINKEDIN_ENABLE_MEMBER_ANALYTICS=false` temporarily, then re-enable after approval.
 
+Existing LinkedIn connections must disconnect/reconnect after this scope is enabled so the stored token includes analytics access.
+
+## Metrics fetched
+
+For each tracked `postUrn`, the sync calls `memberCreatorPostAnalytics` with `aggregation=TOTAL` for:
+
+- `IMPRESSION`
+- `MEMBERS_REACHED`
+- `REACTION`
+- `COMMENT`
+- `RESHARE`
+
+The app computes:
+
+```text
+engagementRate = (REACTION + COMMENT + RESHARE) / IMPRESSION
 ```
-Published/scheduled posts (React state)
-        ↓
-syncMetricsForPosts()  — deterministic mock from post id + status
-        ↓
-localStorage + Dashboard panel
-```
 
-Mock fields align with common analytics shapes:
-
-- `impressions`, `reactions`, `comments`, `shares`, `clicks`, `engagementRate`, `trend`, `source: 'mock'`
-
-## Target architecture (real API)
+## Architecture
 
 ```mermaid
 flowchart LR
-  subgraph client [Vite SPA]
-    Dashboard[Post performance panel]
-    Composer[Post Composer]
-  end
-  subgraph backend [Vercel API + Convex]
-    OAuth[GET /api/linkedin/auth + callback]
-    Post[POST /api/linkedin/post]
-    Sync[Cron: fetch analytics - TODO]
-    DB[(linkedinConnections + metrics)]
-  end
-  LinkedIn[LinkedIn Marketing API]
-  Composer --> Post
-  Post --> LinkedIn
-  OAuth --> LinkedIn
-  Dashboard -->|GET /api/metrics - TODO| Sync
-  Sync --> LinkedIn
+  Composer[Post Composer] --> PostAPI[POST /api/linkedin/post]
+  PostAPI --> LinkedInPosts[LinkedIn Posts API]
+  PostAPI --> PostStore[(Convex linkedinPosts)]
+  Dashboard[Post performance panel] --> MetricsAPI[POST /api/linkedin/metrics]
+  MetricsAPI --> MemberAnalytics[LinkedIn memberCreatorPostAnalytics]
+  MetricsAPI --> MetricsStore[(Convex linkedinPostMetrics)]
+  MetricsStore --> Dashboard
 ```
 
-### Implemented (posting)
+## Auto Researcher integration path
 
-1. Register LinkedIn Developer app — see [LINKEDIN_API.md](./LINKEDIN_API.md).
-2. Routes: `GET /api/linkedin/auth`, `GET /api/linkedin/callback`, `GET /api/linkedin/status`, `POST /api/linkedin/post`.
-3. Set `LINKEDIN_POST_MODE=live` only when ready to create real posts.
+The real metrics are now available in the app as durable Convex data. The next refinement step is to feed high-performing post traits back into the Auto Researcher:
 
-### Remaining (analytics sync)
+- use engagement rate and impressions as post outcome signals
+- compare those outcomes against author, tone, STEEP lenses, and grounded context
+- nudge future draft scoring toward patterns that produced real engagement
 
-1. Add `POST /api/linkedin/sync` (or cron) to pull share/ugc analytics.
-2. Map API response → `PostPerformanceMetrics` (set `source: 'linkedin'`).
-3. Replace `generateMockMetrics` when `source === 'linkedin'` exists for `postId`.
-4. Link scheduled posts: match `post.id` to LinkedIn `shareUrn` after publish (`postUrn` returned from live post).
-
-## Mapping autoresearch metrics → post RL
-
-| GPU autoresearch | Post monitoring + RL |
-|------------------|----------------------|
-| `val_bpb` | `engagementRate` or composite `scoreDraft` |
-| keep if improved | Boost STEEP weight / keep draft variant |
-| discard | Revert draft; deprioritize hook style |
-| `results.tsv` | Experiment log + metrics time series (future) |
-
-Use **live** engagement to nudge weights only after API sync exists; until then, human star ratings in the Composer remain the ground truth.
-
-## Test locally
-
-1. Open Dashboard — confirm **Post performance** lists published/scheduled posts with mock numbers.
-2. Publish a new post from Composer — refresh metrics (re-open tab or navigate away/back) to see a new row.
-3. Click **Queue** on a scheduled row — navigates to Scheduler tab.
+Human star ratings remain the immediate RL signal; LinkedIn metrics become the delayed real-world signal once enough live posts accumulate.

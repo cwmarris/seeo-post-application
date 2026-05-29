@@ -76,7 +76,8 @@ export async function generateVisualAsset(
   } catch (err) {
     const detail = err instanceof Error ? err.message : 'network error';
     throw new Error(
-      `Could not reach image API at ${imagesApiUrl()} (${detail}). Check your connection or VITE_IMAGE_API_BASE_URL.`
+      `Could not reach image API at ${imagesApiUrl()} (${detail}). Check your connection or VITE_IMAGE_API_BASE_URL.`,
+      { cause: err }
     );
   }
 

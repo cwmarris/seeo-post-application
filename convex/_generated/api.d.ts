@@ -10,6 +10,7 @@
 
 import type * as groundedDocuments from "../groundedDocuments.js";
 import type * as linkedinConnections from "../linkedinConnections.js";
+import type * as linkedinPostMetrics from "../linkedinPostMetrics.js";
 
 import type {
   ApiFromModules,
@@ -20,6 +21,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   groundedDocuments: typeof groundedDocuments;
   linkedinConnections: typeof linkedinConnections;
+  linkedinPostMetrics: typeof linkedinPostMetrics;
 }>;
 
 /**

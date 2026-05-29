@@ -22,6 +22,7 @@ flowchart LR
 | `/api/linkedin/auth` | GET | Start OAuth (`sessionId` query) → redirect to LinkedIn |
 | `/api/linkedin/callback` | GET | OAuth callback → store tokens in Convex → redirect to app |
 | `/api/linkedin/status` | GET | Connection status + `postMode` |
+| `/api/linkedin/metrics` | GET/POST | List tracked live posts; POST syncs real member-post impressions/reactions/comments when analytics scope is granted |
 | `/api/linkedin/post` | POST | Create post (respects `LINKEDIN_POST_MODE`) |
 | `/api/linkedin/disconnect` | POST | Remove stored connection for session |
 
@@ -43,6 +44,7 @@ Under **Products**, request/add:
 |---------|-----|
 | **Sign In with LinkedIn using OpenID Connect** | `openid`, `profile`, `email` — member identity after OAuth |
 | **Share on LinkedIn** | `w_member_social` — post as the authenticated member |
+| **Member post analytics** | `r_member_postAnalytics` — read real impressions, reactions, comments, and reposts for member posts |
 
 For **company page** posting later, add Marketing API access and scopes `w_organization_social` / `r_organization_social` (separate approval; not enabled in this MVP).
 
@@ -63,6 +65,7 @@ Default authorization request scopes (see `server/linkedinEnv.ts`):
 
 - `openid`, `profile`, `email`
 - `w_member_social` — create posts as member
+- `r_member_postAnalytics` — retrieve reporting data for member posts
 
 Organization posting would add `w_organization_social` and use `urn:li:organization:{id}` as `author` (not implemented in MVP UI).
 
@@ -142,6 +145,10 @@ LINKEDIN_REDIRECT_URI=http://localhost:5173/api/linkedin/callback
 
 # mock | dry_run | live
 LINKEDIN_POST_MODE=dry_run
+
+# Request r_member_postAnalytics during OAuth for real impressions.
+# Set false if LinkedIn rejects OAuth before this scope is approved.
+LINKEDIN_ENABLE_MEMBER_ANALYTICS=true
 
 # Optional: REST API version header (YYYYMM)
 # LINKEDIN_API_VERSION=202601

@@ -29,4 +29,42 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index('by_session', ['sessionId']),
+
+  linkedinPosts: defineTable({
+    sessionId: v.string(),
+    postUrn: v.string(),
+    authorUrn: v.string(),
+    commentary: v.string(),
+    previewUrl: v.optional(v.string()),
+    mode: v.union(v.literal('live')),
+    publishedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_session', ['sessionId'])
+    .index('by_session_created', ['sessionId', 'createdAt'])
+    .index('by_session_post_urn', ['sessionId', 'postUrn']),
+
+  linkedinPostMetrics: defineTable({
+    sessionId: v.string(),
+    postUrn: v.string(),
+    source: v.union(v.literal('linkedin')),
+    impressions: v.number(),
+    membersReached: v.optional(v.number()),
+    reactions: v.number(),
+    comments: v.number(),
+    reshares: v.number(),
+    saves: v.optional(v.number()),
+    sends: v.optional(v.number()),
+    linkClicks: v.optional(v.number()),
+    engagementRate: v.number(),
+    syncedAt: v.number(),
+    syncStatus: v.union(v.literal('synced'), v.literal('error')),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_session', ['sessionId'])
+    .index('by_session_post_urn', ['sessionId', 'postUrn'])
+    .index('by_session_synced', ['sessionId', 'syncedAt']),
 });

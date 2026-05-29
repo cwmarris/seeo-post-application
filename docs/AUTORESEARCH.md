@@ -23,7 +23,7 @@ Do **not** run `vendor/autoresearch/train.py` for LinkedIn copy. Submodule is in
    - `scoreDraft()` — banned hits, STEEP alignment, length, ratings prior.
    - `runImproveDraftIteration()` — local synonym pass, optional regen, empirical hook tweak.
    - Logs experiments to `localStorage` (`seeo_autoresearch_experiments`).
-5. **Mock post performance** — `src/utils/postMetrics.ts` + Dashboard **Post performance** panel.
+5. **Real LinkedIn post performance** — `POST /api/linkedin/metrics` + Convex `linkedinPostMetrics` feed the Dashboard **Post performance** panel when live posts have analytics access.
 6. **CLI stub** — `scripts/autoresearch_generate.py` / `npm run generate:draft` (structured JSON only; not wired to React).
 
 ### With `OPENAI_API_KEY` in `.env` (dev)
@@ -84,7 +84,7 @@ npm run dev
 1. **Composer** → Generate Draft → rate with stars / tags → **Train RL Model**.
 2. **Improve draft** — note metric and keep/discard message; repeat and check **RL Optimizer → Autoresearch experiment log**.
 3. Enable **Auto-improve every 30 min** only if you want long-running tab tests.
-4. **Dashboard** → **Post performance** — mock impressions/engagement per published/scheduled post.
+4. **Dashboard** → **Post performance** — real impressions, reactions, comments, and reposts for tracked live LinkedIn posts.
 5. Optional: `npm run generate:draft -- --topic "Forklift safety" --audience "ops leaders" --author "Craig Marris"`
 
 ```bash
@@ -95,5 +95,5 @@ npm run build
 ## Honest limits
 
 - No connection to karpathy training runs or `val_bpb`.
-- LinkedIn impressions/engagement are **simulated** until Marketing API integration (see `docs/LINKEDIN_MONITORING.md`).
+- LinkedIn impressions/engagement require live posts, the `r_member_postAnalytics` scope, and enough time for LinkedIn to report analytics (see `docs/LINKEDIN_MONITORING.md`).
 - Image ratings are not yet a separate signal (post star ratings drive RL today).

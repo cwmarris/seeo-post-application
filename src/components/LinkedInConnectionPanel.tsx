@@ -4,7 +4,9 @@ import {
   disconnectLinkedIn,
   fetchLinkedInStatus,
   getLinkedInAuthUrl,
+  hasLinkedInAnalyticsScope,
   linkedInBannerLabel,
+  LINKEDIN_MEMBER_ANALYTICS_SCOPE,
   setLinkedInPostMode,
   type LinkedInPostMode,
   type LinkedInStatusResponse,
@@ -40,18 +42,24 @@ export const LinkedInConnectionPanel: React.FC<LinkedInConnectionPanelProps> = (
   }, [onStatusChange]);
 
   useEffect(() => {
-    void refresh();
+    const timer = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [refresh]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('linkedin') === 'connected' || params.get('linkedin') === 'error') {
-      void refresh();
+      const timer = window.setTimeout(() => {
+        void refresh();
+      }, 0);
       params.delete('linkedin');
       params.delete('linkedin_error');
       const next = `${window.location.pathname}${params.toString() ? `?${params}` : ''}`;
       window.history.replaceState({}, '', next);
+      return () => window.clearTimeout(timer);
     }
   }, [refresh]);
 
@@ -101,6 +109,7 @@ export const LinkedInConnectionPanel: React.FC<LinkedInConnectionPanelProps> = (
     : !status.connected ? 'linkedin-banner--warn'
     : status.livePostingEnabled ? 'linkedin-banner--live'
     : 'linkedin-banner--dry';
+  const analyticsScopeGranted = status?.connected && hasLinkedInAnalyticsScope(status.scopes);
 
   return (
     <div
@@ -194,6 +203,12 @@ export const LinkedInConnectionPanel: React.FC<LinkedInConnectionPanelProps> = (
         <p style={{ fontSize: '12px', margin: '8px 0 0', color: 'var(--text-main)' }}>
           Profile: <strong>{status.memberName}</strong>
           {status.memberEmail ? ` · ${status.memberEmail}` : null}
+        </p>
+      )}
+
+      {status?.connected && !analyticsScopeGranted && (
+        <p style={{ fontSize: '12px', margin: '8px 0 0', color: 'var(--color-warning)' }}>
+          Real impressions need <code style={{ fontSize: '11px' }}>{LINKEDIN_MEMBER_ANALYTICS_SCOPE}</code>. Add that product/scope in LinkedIn, then disconnect and reconnect.
         </p>
       )}
 

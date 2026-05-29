@@ -31,9 +31,12 @@ export const ScheduledPostModal: React.FC<ScheduledPostModalProps> = ({ post, on
 
   useEffect(() => {
     if (!post) return;
-    setContent(post.content);
-    setScheduledTime(toDatetimeLocalValue(post.scheduledTime ?? ''));
-    setAuthorId(post.authorId);
+    const timer = window.setTimeout(() => {
+      setContent(post.content);
+      setScheduledTime(toDatetimeLocalValue(post.scheduledTime ?? ''));
+      setAuthorId(post.authorId);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [post]);
 
   if (!post) return null;
@@ -162,4 +165,3 @@ export const ScheduledPostModal: React.FC<ScheduledPostModalProps> = ({ post, on
     </div>
   );
 };
-

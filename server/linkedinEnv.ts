@@ -46,11 +46,32 @@ export function getAppReturnBase(env: NodeJS.ProcessEnv = process.env): string {
   return `https://${fromEnv.replace(/\/$/, '')}`;
 }
 
-export const LINKEDIN_OAUTH_SCOPES = [
+export const LINKEDIN_BASE_OAUTH_SCOPES = [
   'openid',
   'profile',
   'email',
   'w_member_social',
+] as const;
+
+export const LINKEDIN_MEMBER_ANALYTICS_SCOPES = ['r_member_postAnalytics'] as const;
+
+export function getLinkedInOAuthScopes(env: NodeJS.ProcessEnv = process.env): string[] {
+  const scopes: string[] = [...LINKEDIN_BASE_OAUTH_SCOPES];
+  if (env.LINKEDIN_ENABLE_MEMBER_ANALYTICS?.trim().toLowerCase() !== 'false') {
+    scopes.push(...LINKEDIN_MEMBER_ANALYTICS_SCOPES);
+  }
+
+  const extra = env.LINKEDIN_EXTRA_SCOPES?.trim();
+  if (extra) {
+    scopes.push(...extra.split(/[,\s]+/).filter(Boolean));
+  }
+
+  return [...new Set(scopes)];
+}
+
+export const LINKEDIN_OAUTH_SCOPES = [
+  ...LINKEDIN_BASE_OAUTH_SCOPES,
+  ...LINKEDIN_MEMBER_ANALYTICS_SCOPES,
 ] as const;
 
 export const LINKEDIN_ORG_POST_SCOPES = ['w_organization_social', 'r_organization_social'] as const;

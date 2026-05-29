@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import {
   handleLinkedInAuth,
+  handleLinkedInMetrics,
   handleLinkedInMode,
   handleLinkedInPost,
   handleLinkedInStatus,
@@ -62,6 +63,7 @@ describe('linkedinHandlers', () => {
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toContain('linkedin.com/oauth/v2/authorization');
     expect(res.headers.location).toContain('state=sess-1');
+    expect(res.headers.location).toContain('r_member_postAnalytics');
   });
 
   it('returns status with post mode', async () => {
@@ -129,5 +131,115 @@ describe('linkedinHandlers', () => {
     const body = JSON.parse(res.body);
     expect(body.postMode).toBe('live');
     expect(body.livePostingEnabled).toBe(true);
+  });
+
+  it('reports missing analytics scope before syncing LinkedIn metrics', async () => {
+    vi.spyOn(linkedinConvex, 'listTrackedLinkedInPosts').mockResolvedValue([
+      {
+        post: {
+          sessionId: 'sess-1',
+          postUrn: 'urn:li:share:999',
+          authorUrn: 'urn:li:person:member-1',
+          commentary: 'Live post',
+          previewUrl: 'https://www.linkedin.com/feed/update/urn%3Ali%3Ashare%3A999',
+          mode: 'live',
+          publishedAt: Date.now(),
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+        metrics: null,
+      },
+    ]);
+    vi.spyOn(linkedinConvex, 'getLinkedInTokenRow').mockResolvedValue({
+      sessionId: 'sess-1',
+      memberId: 'member-1',
+      memberName: 'Craig Marris',
+      memberUrn: 'urn:li:person:member-1',
+      accessToken: 'token',
+      expiresAt: Date.now() + 3600_000,
+      scopes: 'openid profile email w_member_social',
+    });
+    const saveSpy = vi.spyOn(linkedinConvex, 'saveLinkedInMetrics');
+
+    const req = mockRequest('POST', '/api/linkedin/metrics', JSON.stringify({
+      sessionId: 'sess-1',
+      sync: true,
+    }));
+    const res = mockResponse();
+
+    await handleLinkedInMetrics(req, res, vi.fn() as unknown as typeof fetch);
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.syncError).toContain('r_member_postAnalytics');
+    expect(body.syncedCount).toBe(0);
+    expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it('syncs tracked live post metrics when analytics scope is granted', async () => {
+    const trackedPost = {
+      post: {
+        sessionId: 'sess-1',
+        postUrn: 'urn:li:share:999',
+        authorUrn: 'urn:li:person:member-1',
+        commentary: 'Live post',
+        previewUrl: 'https://www.linkedin.com/feed/update/urn%3Ali%3Ashare%3A999',
+        mode: 'live' as const,
+        publishedAt: Date.now(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+      metrics: null,
+    };
+    vi.spyOn(linkedinConvex, 'listTrackedLinkedInPosts').mockResolvedValue([trackedPost]);
+    vi.spyOn(linkedinConvex, 'getLinkedInTokenRow').mockResolvedValue({
+      sessionId: 'sess-1',
+      memberId: 'member-1',
+      memberName: 'Craig Marris',
+      memberUrn: 'urn:li:person:member-1',
+      accessToken: 'token',
+      expiresAt: Date.now() + 3600_000,
+      scopes: 'openid profile email w_member_social r_member_postAnalytics',
+    });
+    const saveSpy = vi.spyOn(linkedinConvex, 'saveLinkedInMetrics').mockResolvedValue(undefined);
+    const metricValues: Record<string, number> = {
+      IMPRESSION: 1000,
+      MEMBERS_REACHED: 800,
+      REACTION: 25,
+      COMMENT: 3,
+      RESHARE: 2,
+    };
+    const fetchMock = vi.fn(async (url: string) => {
+      const queryType = new URL(url).searchParams.get('queryType') ?? '';
+      return {
+        ok: true,
+        json: async () => ({ elements: [{ count: metricValues[queryType] ?? 0 }] }),
+      };
+    });
+
+    const req = mockRequest('POST', '/api/linkedin/metrics', JSON.stringify({
+      sessionId: 'sess-1',
+      sync: true,
+    }));
+    const res = mockResponse();
+
+    await handleLinkedInMetrics(req, res, fetchMock as unknown as typeof fetch);
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.syncedCount).toBe(1);
+    expect(body.syncError).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+    expect(saveSpy).toHaveBeenCalledWith(
+      'sess-1',
+      'urn:li:share:999',
+      expect.objectContaining({
+        impressions: 1000,
+        reactions: 25,
+        comments: 3,
+        reshares: 2,
+        syncStatus: 'synced',
+      })
+    );
   });
 });

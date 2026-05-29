@@ -10,14 +10,24 @@ import {
   disconnectLinkedIn,
   getLinkedInStatus,
   getLinkedInTokenRow,
+  listTrackedLinkedInPosts,
+  saveLinkedInMetrics,
   saveLinkedInConnection,
+  saveTrackedLinkedInPost,
   setLinkedInStoredPostMode,
 } from './linkedinConvex.js';
 import {
   getAppReturnBase,
+  getLinkedInOAuthScopes,
   getLinkedInRedirectUri,
   isLinkedInOAuthConfigured,
 } from './linkedinEnv.js';
+import {
+  buildLinkedInMetricsErrorSnapshot,
+  fetchLinkedInMemberPostMetrics,
+  hasLinkedInScope,
+  LINKEDIN_MEMBER_ANALYTICS_SCOPE,
+} from './linkedinAnalytics.js';
 import { getEffectiveLinkedInPostMode, isSwitchableLinkedInPostMode } from './linkedinMode.js';
 
 function readQuery(req: IncomingMessage): URLSearchParams {
@@ -91,6 +101,7 @@ export async function handleLinkedInAuth(
     clientId,
     redirectUri,
     state: sessionId,
+    scopes: getLinkedInOAuthScopes(),
   });
 
   redirect(res, authUrl);
@@ -276,7 +287,7 @@ export async function handleLinkedInDisconnect(
     return;
   }
 
-  let body: { sessionId?: string } = {};
+  let body: { sessionId?: string };
   try {
     body = await readJsonBody(req);
   } catch {
@@ -354,6 +365,17 @@ export async function handleLinkedInPost(
       fetchImpl,
     });
 
+    if (connection && result.mode === 'live' && result.postUrn) {
+      await saveTrackedLinkedInPost({
+        sessionId,
+        postUrn: result.postUrn,
+        authorUrn: result.authorUrn ?? memberUrn,
+        commentary,
+        previewUrl: result.previewUrl,
+        publishedAt: Date.now(),
+      });
+    }
+
     sendJson(res, 200, result);
   } catch (err) {
     sendJson(res, 502, {
@@ -361,6 +383,79 @@ export async function handleLinkedInPost(
       postMode,
     });
   }
+}
+
+export async function handleLinkedInMetrics(
+  req: IncomingMessage,
+  res: ServerResponse,
+  fetchImpl?: typeof fetch
+): Promise<void> {
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    sendJson(res, 405, { error: 'Method not allowed' });
+    return;
+  }
+
+  let body: { sessionId?: string; sync?: boolean } = {};
+  if (req.method === 'POST') {
+    try {
+      body = await readJsonBody(req);
+    } catch {
+      sendJson(res, 400, { error: 'Invalid JSON body' });
+      return;
+    }
+  }
+
+  const params = readQuery(req);
+  const sessionId = requireSessionId(params, body);
+  if (!sessionId) {
+    sendJson(res, 400, { error: 'sessionId is required' });
+    return;
+  }
+
+  const shouldSync = req.method === 'POST' || params.get('sync') === 'true' || body.sync === true;
+  const trackedBeforeSync = await listTrackedLinkedInPosts(sessionId);
+  let syncError: string | undefined;
+  let syncedCount = 0;
+
+  if (shouldSync && trackedBeforeSync.length > 0) {
+    const connection = await getLinkedInTokenRow(sessionId);
+    if (!connection) {
+      syncError = 'Connect LinkedIn before syncing metrics.';
+    } else if (connection.expiresAt < Date.now()) {
+      syncError = 'LinkedIn access token expired — reconnect LinkedIn.';
+    } else if (!hasLinkedInScope(connection.scopes, LINKEDIN_MEMBER_ANALYTICS_SCOPE)) {
+      syncError =
+        `Reconnect LinkedIn with ${LINKEDIN_MEMBER_ANALYTICS_SCOPE} to sync real impressions.`;
+    } else {
+      for (const row of trackedBeforeSync) {
+        try {
+          const metrics = await fetchLinkedInMemberPostMetrics({
+            accessToken: connection.accessToken,
+            postUrn: row.post.postUrn,
+            fetchImpl,
+          });
+          await saveLinkedInMetrics(sessionId, row.post.postUrn, metrics);
+          syncedCount += 1;
+        } catch (err) {
+          await saveLinkedInMetrics(
+            sessionId,
+            row.post.postUrn,
+            buildLinkedInMetricsErrorSnapshot(err)
+          );
+          syncError = err instanceof Error ? err.message : 'LinkedIn metrics sync failed';
+        }
+      }
+    }
+  }
+
+  const trackedPosts = await listTrackedLinkedInPosts(sessionId);
+  sendJson(res, 200, {
+    trackedPosts,
+    syncedCount,
+    syncError,
+    analyticsScopeRequired: LINKEDIN_MEMBER_ANALYTICS_SCOPE,
+    analyticsAvailable: !syncError,
+  });
 }
 
 export function createLinkedInMiddleware(
@@ -389,6 +484,10 @@ export function createLinkedInMiddleware(
         }
         if (path === '/api/linkedin/mode') {
           await handleLinkedInMode(req, res);
+          return;
+        }
+        if (path === '/api/linkedin/metrics') {
+          await handleLinkedInMetrics(req, res, fetchImpl);
           return;
         }
         if (path === '/api/linkedin/disconnect' && req.method === 'POST') {

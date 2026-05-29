@@ -24,6 +24,54 @@ export type LinkedInPostApiResult = {
   authorUrn?: string;
 };
 
+export type LinkedInMetricsSnapshot = {
+  source: 'linkedin';
+  impressions: number;
+  membersReached?: number;
+  reactions: number;
+  comments: number;
+  reshares: number;
+  saves?: number;
+  sends?: number;
+  linkClicks?: number;
+  engagementRate: number;
+  syncedAt: number;
+  syncStatus: 'synced' | 'error';
+  error?: string;
+  postUrn: string;
+};
+
+export type LinkedInTrackedPost = {
+  post: {
+    sessionId: string;
+    postUrn: string;
+    authorUrn: string;
+    commentary: string;
+    previewUrl?: string;
+    mode: 'live';
+    publishedAt: number;
+    createdAt: number;
+    updatedAt: number;
+  };
+  metrics: LinkedInMetricsSnapshot | null;
+};
+
+export type LinkedInMetricsResponse = {
+  trackedPosts: LinkedInTrackedPost[];
+  syncedCount: number;
+  syncError?: string;
+  analyticsScopeRequired: string;
+  analyticsAvailable: boolean;
+};
+
+export const LINKEDIN_MEMBER_ANALYTICS_SCOPE = 'r_member_postAnalytics';
+
+export function hasLinkedInAnalyticsScope(scopes?: string): boolean {
+  return new Set((scopes ?? '').split(/[,\s]+/).filter(Boolean)).has(
+    LINKEDIN_MEMBER_ANALYTICS_SCOPE
+  );
+}
+
 function apiBase(): string {
   const fromEnv = import.meta.env.VITE_LINKEDIN_API_BASE_URL as string | undefined;
   if (fromEnv?.trim()) return fromEnv.trim().replace(/\/$/, '');
@@ -90,6 +138,28 @@ export async function postToLinkedIn(commentary: string, sessionId?: string): Pr
   const body = (await res.json()) as LinkedInPostApiResult & { error?: string };
   if (!res.ok) {
     throw new Error(body.error ?? `LinkedIn post failed (${res.status})`);
+  }
+  return body;
+}
+
+export async function fetchLinkedInMetrics(options?: {
+  sync?: boolean;
+  sessionId?: string;
+}): Promise<LinkedInMetricsResponse> {
+  const id = options?.sessionId ?? getGroundedSessionId();
+  const sync = options?.sync === true;
+  const res =
+    sync ?
+      await fetch(`${apiBase()}/api/linkedin/metrics`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: id, sync: true }),
+      })
+    : await fetch(linkedInPath('/api/linkedin/metrics', id));
+
+  const body = (await res.json()) as LinkedInMetricsResponse & { error?: string };
+  if (!res.ok) {
+    throw new Error(body.error ?? `LinkedIn metrics failed (${res.status})`);
   }
   return body;
 }
