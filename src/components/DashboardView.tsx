@@ -27,6 +27,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const publishedPosts = posts.filter((p) => p.status === 'published');
   const scheduledPosts = posts.filter((p) => p.status === 'scheduled');
   const latestPublishResult = posts.find((p) => p.publishResult)?.publishResult;
+  const latestLivePreviewUrl =
+    latestPublishResult?.mode === 'live' ? latestPublishResult.previewUrl : undefined;
   const scheduledById = useMemo(() => new Map(scheduledPosts.map((p) => [p.id, p])), [scheduledPosts]);
   const [activeScheduledId, setActiveScheduledId] = useState<string | null>(null);
   const activeScheduledPost = activeScheduledId ? scheduledById.get(activeScheduledId) ?? null : null;
@@ -97,17 +99,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
             {latestPublishResult.message}
-            {latestPublishResult.mode === 'dry_run' ? ' No live LinkedIn post was created.' : ''}
-            {latestPublishResult.previewUrl && (
+            {latestPublishResult.mode === 'dry_run' ?
+              ' No live LinkedIn post was created, so there is no LinkedIn preview to open.'
+            : ''}
+            {latestPublishResult.mode === 'mock' ?
+              ' Mock mode skips LinkedIn, so there is no LinkedIn preview to open.'
+            : ''}
+            {latestLivePreviewUrl && (
               <>
                 {' '}
                 <a
-                  href={latestPublishResult.previewUrl}
+                  href={latestLivePreviewUrl}
                   target="_blank"
                   rel="noreferrer"
                   style={{ color: 'var(--color-primary)', fontWeight: 700 }}
                 >
-                  View preview
+                  Open on LinkedIn
                 </a>
               </>
             )}

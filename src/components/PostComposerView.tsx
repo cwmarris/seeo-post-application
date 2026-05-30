@@ -233,7 +233,11 @@ export const PostComposerView: React.FC<PostComposerViewProps> = ({
       try {
         const linkedInResult = await postToLinkedIn(postDraft);
         const previewNote =
-          linkedInResult.previewUrl ? ` Preview: ${linkedInResult.previewUrl}` : '';
+          linkedInResult.mode === 'live' && linkedInResult.previewUrl ?
+            ` Open on LinkedIn: ${linkedInResult.previewUrl}`
+          : linkedInResult.mode === 'dry_run' ?
+            ' No live LinkedIn preview is available in dry run.'
+          : '';
         const newPost: LinkedInPost = {
           id: `post-${Date.now()}`,
           authorId: selectedAuthor,

@@ -85,4 +85,46 @@ describe('DashboardView scheduled queue modal', () => {
     const queueCard = screen.getByRole('button', { name: /open scheduled post scheduled-test-post/i });
     expect(within(queueCard).getByText('Updated scheduled post text')).toBeInTheDocument();
   });
+
+  it('does not show a LinkedIn preview link for dry-run posts', () => {
+    renderDashboard([
+      {
+        id: 'dry-run-post',
+        authorId: 'craig',
+        content: 'Dry run post',
+        status: 'published',
+        steepFocus: ['Social'],
+        tone: 'Thought Leader',
+        publishResult: {
+          mode: 'dry_run',
+          message: 'Would post to LinkedIn (dry run)',
+          previewUrl: 'https://www.linkedin.com/feed/?seeo_dry_run=urn%3Ali%3Aperson%3A1',
+        },
+      },
+    ]);
+
+    expect(screen.getByRole('status')).toHaveTextContent(/no live linkedin post was created/i);
+    expect(screen.queryByRole('link', { name: /open on linkedin/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the LinkedIn preview link for live posts', () => {
+    renderDashboard([
+      {
+        id: 'live-post',
+        authorId: 'craig',
+        content: 'Live post',
+        status: 'published',
+        steepFocus: ['Social'],
+        tone: 'Thought Leader',
+        publishResult: {
+          mode: 'live',
+          message: 'Posted to LinkedIn.',
+          previewUrl: 'https://www.linkedin.com/feed/update/urn%3Ali%3Ashare%3A999',
+        },
+      },
+    ]);
+
+    const link = screen.getByRole('link', { name: /open on linkedin/i });
+    expect(link).toHaveAttribute('href', 'https://www.linkedin.com/feed/update/urn%3Ali%3Ashare%3A999');
+  });
 });
