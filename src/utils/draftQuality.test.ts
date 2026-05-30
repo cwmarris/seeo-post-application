@@ -3,6 +3,7 @@ import { generateLinkedInPost } from './postGenerator';
 import { getRLState, filterBannedPhrases } from './rlEngine';
 import {
   findBannedPhrasesInText,
+  enforceDraftLength,
   getLengthBand,
   hasAuthorPreferredHashtags,
   isWithinLengthBand,
@@ -31,6 +32,26 @@ describe('draftQuality helpers', () => {
     expect(isWithinLengthBand(shortPad, 'short')).toBe(true);
     expect(isWithinLengthBand('x'.repeat(200), 'short')).toBe(false);
     expect(isWithinLengthBand('x'.repeat(2000), 'long')).toBe(false);
+  });
+
+  it('enforces the medium maximum while preserving trailing hashtags', () => {
+    const longDraft = [
+      'Warehouse safety improves when leaders can see weak signals before they become incidents.',
+      'One practical example is pedestrian and forklift separation. '.repeat(20),
+      'The point is not surveillance. The point is coaching from evidence while the work is still recoverable. '.repeat(10),
+      '#WorkplaceSafety #AI #seeo',
+    ].join('\n\n');
+
+    const result = enforceDraftLength(longDraft, 'medium');
+
+    expect(result.wasTrimmed).toBe(true);
+    expect(result.finalLength).toBeLessThanOrEqual(1200);
+    expect(result.content).toContain('#WorkplaceSafety #AI #seeo');
+  });
+
+  it('removes response wrappers and title labels during length normalization', () => {
+    const result = enforceDraftLength('```text\nLinkedIn post: A practical safety note.\n```', 'short');
+    expect(result.content).toBe('A practical safety note.');
   });
 
   it('flags banned and fluff phrases in draft text', () => {

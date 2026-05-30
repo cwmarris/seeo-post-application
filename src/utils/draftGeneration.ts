@@ -3,6 +3,7 @@ import { generateLinkedInPost } from './postGenerator';
 import { filterBannedPhrases, type RLState } from './rlEngine';
 import { improveDraftViaApi } from './openaiDraft';
 import { fetchOpenAIHealth } from './openaiStatus';
+import { enforceDraftLength } from './draftQuality';
 
 export type DraftTargetLength = 'short' | 'medium' | 'long';
 
@@ -65,8 +66,12 @@ export async function generateDraftWithFallback(
         },
       });
       const filtered = filterBannedPhrases(apiResult.content);
+      const lengthChecked = enforceDraftLength(
+        filtered.cleanText,
+        input.targetLength ?? 'medium'
+      );
       return {
-        content: filtered.cleanText,
+        content: lengthChecked.content,
         replacedPhrases: filtered.replacements,
         wasFiltered: filtered.replacedCount > 0,
         source: 'openai',
@@ -85,9 +90,10 @@ export async function generateDraftWithFallback(
     input.rlState,
     { variationSeed: Date.now(), topic }
   );
+  const lengthChecked = enforceDraftLength(local.content, input.targetLength ?? 'medium');
 
   return {
-    content: local.content,
+    content: lengthChecked.content,
     replacedPhrases: local.replacedPhrases,
     wasFiltered: local.wasFiltered,
     source: 'local',

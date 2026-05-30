@@ -42,17 +42,17 @@ export const TARGET_LENGTH_GUIDANCE: Record<
   short: {
     label: 'Short',
     charRange: '550–850',
-    maxParagraphs: '4–6',
+    maxParagraphs: '3–5',
   },
   medium: {
     label: 'Medium',
     charRange: '850–1,200',
-    maxParagraphs: '6–8',
+    maxParagraphs: '4–6',
   },
   long: {
     label: 'Long',
     charRange: '1,200–1,600',
-    maxParagraphs: '8–10',
+    maxParagraphs: '6–8',
   },
 };
 

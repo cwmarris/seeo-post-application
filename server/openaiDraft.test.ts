@@ -79,6 +79,8 @@ describe('buildDraftPromptMessages', () => {
     const prompts = buildDraftPromptMessages(baseBody);
     expect(prompts.system).toMatch(/hook/i);
     expect(prompts.system).toMatch(/No fluff/i);
+    expect(prompts.system).toMatch(/Hard target length/i);
+    expect(prompts.system).toMatch(/Count characters/i);
     expect(prompts.system).not.toMatch(/1200-1800/);
   });
 });
@@ -162,5 +164,74 @@ describe('handleGenerateDraftBody', () => {
     };
     expect(payload.messages[0]?.content).toContain('Auckland pilot');
     expect(payload.messages[1]?.content).toContain('550–850');
+  });
+
+  it('omits custom temperature for GPT-5-family draft models', async () => {
+    await handleGenerateDraftBody(
+      {
+        ...baseBody,
+        targetLength: 'medium',
+      },
+      'sk-test-key',
+      'gpt-5.5'
+    );
+
+    const fetchMock = vi.mocked(globalThis.fetch);
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const payload = JSON.parse(init.body as string) as { temperature?: number };
+    expect(payload.temperature).toBeUndefined();
+  });
+
+  it('keeps lower generation temperature for GPT-4-family draft models', async () => {
+    await handleGenerateDraftBody(
+      {
+        ...baseBody,
+        targetLength: 'medium',
+      },
+      'sk-test-key',
+      'gpt-4.1'
+    );
+
+    const fetchMock = vi.mocked(globalThis.fetch);
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const payload = JSON.parse(init.body as string) as { temperature?: number };
+    expect(payload.temperature).toBe(0.65);
+  });
+
+  it('trims overlong OpenAI drafts to the requested target band', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                content: [
+                  'This is a practical hook about visible risk.',
+                  'A long operational paragraph. '.repeat(80),
+                  '#WorkplaceSafety #AI #seeo',
+                ].join('\n\n'),
+              },
+            },
+          ],
+        }),
+      }))
+    );
+
+    const result = await handleGenerateDraftBody(
+      {
+        ...baseBody,
+        targetLength: 'medium',
+      },
+      'sk-test-key',
+      'gpt-5.5'
+    );
+
+    expect(result.status).toBe(200);
+    const body = result.body as { content: string };
+    expect(body.content.length).toBeLessThanOrEqual(1200);
+    expect(body.content).toContain('#WorkplaceSafety #AI #seeo');
   });
 });

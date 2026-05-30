@@ -11,6 +11,7 @@ import {
   resolveDraftModel,
   TARGET_LENGTH_GUIDANCE,
 } from './openaiModels.js';
+import { enforceDraftLength } from '../src/utils/draftQuality.js';
 
 const OPENAI_CHAT_URL = 'https://api.openai.com/v1/chat/completions';
 
@@ -77,6 +78,11 @@ function resolveTargetLength(body: GenerateDraftBody): DraftTargetLength {
   return 'medium';
 }
 
+function supportsCustomTemperature(model: string): boolean {
+  const normalized = model.trim().toLowerCase();
+  return normalized.startsWith('gpt-4') || normalized.startsWith('gpt-4o');
+}
+
 function buildSystemPrompt(body: GenerateDraftBody): string {
   const { rlContext, steepFocus, tone } = body;
   const targetLength = resolveTargetLength(body);
@@ -111,10 +117,14 @@ ${customInstructions}
 LinkedIn rules (strict):
 - Open with a hook in the first 1–2 lines (specific, concrete, no throat-clearing).
 - No fluff: ban "I'm excited to share", "thrilled to announce", "in today's fast-paced world", "game-changer", "leverage synergies".
-- Short paragraphs (1–3 sentences). Scannable on mobile.
-- Target length: ${lengthGuide.charRange} characters (${lengthGuide.label}); max ~${lengthGuide.maxParagraphs} short paragraphs.
+- Pick one concrete angle. Do not try to cover every STEEP lens in one post.
+- Use grounded facts when provided. Do not invent pilots, statistics, customer names, or claims.
+- Short paragraphs (1–2 sentences). Scannable on mobile.
+- Hard target length: ${lengthGuide.charRange} characters (${lengthGuide.label}); max ${lengthGuide.maxParagraphs} short paragraphs. Count characters before answering.
+- If any author instruction conflicts with the length band, the length band wins.
 - End with 1–3 relevant hashtags only.
 - Write like a seasoned operator, not generic AI marketing.
+- No headings, labels, markdown tables, bullet lists, or title lines unless the author explicitly asks for them.
 
 NEVER use these banned phrases/words: ${rlContext.bannedWords.join('; ')}.
 New Zealand / industrial safety context when relevant.`;
@@ -122,7 +132,9 @@ New Zealand / industrial safety context when relevant.`;
 
 function buildUserPrompt(body: GenerateDraftBody): string {
   const targetLength = resolveTargetLength(body);
-  const lengthNote = `Stay within ${TARGET_LENGTH_GUIDANCE[targetLength].charRange} characters.`;
+  const lengthNote =
+    `Stay within ${TARGET_LENGTH_GUIDANCE[targetLength].charRange} characters. ` +
+    'This is a hard limit; shorten before returning if needed.';
 
   if (body.mode === 'improve' && body.draft) {
     const feedback =
@@ -156,6 +168,7 @@ Return ONLY the improved post text (no markdown fences, no commentary).`;
   return `Write a new LinkedIn post about: ${topic}.${grounded}${custom}
 
 ${lengthNote}
+Make it specific, useful, and grounded. Choose one sharp thesis and cut generic safety-marketing language.
 Return ONLY the post text (no title, no markdown fences).`;
 }
 
@@ -194,6 +207,20 @@ export async function handleGenerateDraftBody(
   }
 
   const prompts = buildDraftPromptMessages(parsed);
+  const requestBody: {
+    model: string;
+    messages: Array<{ role: 'system' | 'user'; content: string }>;
+    temperature?: number;
+  } = {
+    model,
+    messages: [
+      { role: 'system', content: prompts.system },
+      { role: 'user', content: prompts.user },
+    ],
+  };
+  if (supportsCustomTemperature(model)) {
+    requestBody.temperature = parsed.mode === 'generate' ? 0.65 : 0.55;
+  }
 
   const response = await fetch(OPENAI_CHAT_URL, {
     method: 'POST',
@@ -201,14 +228,7 @@ export async function handleGenerateDraftBody(
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model,
-      temperature: parsed.mode === 'generate' ? 0.82 : 0.65,
-      messages: [
-        { role: 'system', content: prompts.system },
-        { role: 'user', content: prompts.user },
-      ],
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   const payload = (await response.json()) as {
@@ -229,10 +249,11 @@ export async function handleGenerateDraftBody(
   if (!content) {
     return { status: 502, body: { error: 'No draft text returned from OpenAI' } };
   }
+  const lengthChecked = enforceDraftLength(content, resolveTargetLength(parsed));
 
   return {
     status: 200,
-    body: { content, model },
+    body: { content: lengthChecked.content, model },
   };
 }
 

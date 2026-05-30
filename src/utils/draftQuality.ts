@@ -1,5 +1,6 @@
 import { getAuthorStyleSettings, type AuthorId } from './authorStyles';
-import type { DraftTargetLength } from './openaiDraft';
+
+export type DraftTargetLength = 'short' | 'medium' | 'long';
 
 /** Keep in sync with `server/openaiModels.ts` TARGET_LENGTH_GUIDANCE char ranges. */
 const LENGTH_BANDS: Record<DraftTargetLength, { min: number; max: number }> = {
@@ -28,6 +29,120 @@ export function parseCharRange(charRange: string): { min: number; max: number } 
 
 export function getLengthBand(targetLength: DraftTargetLength): { min: number; max: number } {
   return LENGTH_BANDS[targetLength];
+}
+
+export function stripDraftWrappers(content: string): string {
+  return content
+    .trim()
+    .replace(/^```(?:\w+)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .replace(/^\s*(?:title|post|linkedin post)\s*:\s*/i, '')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function splitTrailingHashtags(content: string): { body: string; hashtags: string } {
+  const paragraphs = stripDraftWrappers(content)
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const last = paragraphs[paragraphs.length - 1] ?? '';
+  const isHashtagLine = /^(?:#[A-Za-z0-9_-]+)(?:\s+#[A-Za-z0-9_-]+){0,4}$/.test(last);
+  if (!isHashtagLine) {
+    return { body: paragraphs.join('\n\n'), hashtags: '' };
+  }
+  return {
+    body: paragraphs.slice(0, -1).join('\n\n'),
+    hashtags: last,
+  };
+}
+
+function trimParagraphToMax(paragraph: string, max: number): string {
+  const clean = paragraph.replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+
+  const sentences = clean.match(/[^.!?]+[.!?]+(?:["')\]]+)?|[^.!?]+$/g) ?? [];
+  let out = '';
+  for (const sentence of sentences) {
+    const next = sentence.trim();
+    if (!next) continue;
+    const candidate = out ? `${out} ${next}` : next;
+    if (candidate.length > max) break;
+    out = candidate;
+  }
+
+  if (out.length >= Math.min(120, Math.floor(max * 0.45))) {
+    return out.trim();
+  }
+
+  const hardCut = clean.slice(0, max + 1);
+  const lastSpace = hardCut.lastIndexOf(' ');
+  const end = lastSpace >= Math.max(40, Math.floor(max * 0.6)) ? lastSpace : max;
+  return clean.slice(0, end).replace(/[,\s:;-]+$/, '').trim();
+}
+
+function trimBodyToMax(body: string, max: number): string {
+  const paragraphs = stripDraftWrappers(body)
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const output: string[] = [];
+  for (const paragraph of paragraphs) {
+    const candidate = [...output, paragraph].join('\n\n');
+    if (candidate.length <= max) {
+      output.push(paragraph);
+      continue;
+    }
+
+    const used = output.join('\n\n').length;
+    const separator = output.length ? 2 : 0;
+    const remaining = max - used - separator;
+    if (remaining > 80) {
+      const trimmed = trimParagraphToMax(paragraph, remaining);
+      if (trimmed) output.push(trimmed);
+    }
+    break;
+  }
+
+  return output.join('\n\n').trim() || trimParagraphToMax(paragraphs.join(' '), max);
+}
+
+export function enforceDraftLength(
+  content: string,
+  targetLength: DraftTargetLength = 'medium'
+): { content: string; wasTrimmed: boolean; originalLength: number; finalLength: number } {
+  const normalized = stripDraftWrappers(content);
+  const { max } = getLengthBand(targetLength);
+  const originalLength = normalized.length;
+  if (originalLength <= max) {
+    return {
+      content: normalized,
+      wasTrimmed: false,
+      originalLength,
+      finalLength: originalLength,
+    };
+  }
+
+  const { body, hashtags } = splitTrailingHashtags(normalized);
+  const reserve = hashtags ? hashtags.length + 2 : 0;
+  const bodyMax = Math.max(120, max - reserve);
+  const trimmedBody = trimBodyToMax(body, bodyMax);
+  let next = hashtags ? `${trimmedBody}\n\n${hashtags}`.trim() : trimmedBody;
+
+  if (next.length > max) {
+    next = trimBodyToMax(next, max);
+  }
+
+  return {
+    content: next,
+    wasTrimmed: true,
+    originalLength,
+    finalLength: next.length,
+  };
 }
 
 /**
